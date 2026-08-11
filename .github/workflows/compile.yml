@@ -17,6 +17,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Free runner disk space (Quartus image needs ~18GB)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                      /opt/hostedtoolcache/CodeQL /usr/local/.ghcup \
+                      /usr/local/share/boost /usr/local/graalvm
+          sudo docker image prune --all --force
+          df -h /
+
       - name: Compile with Quartus 18.1 (Docker)
         run: |
           docker run --rm -v "$PWD":/build -w /build \
