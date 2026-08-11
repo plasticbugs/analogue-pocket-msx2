@@ -1,0 +1,47 @@
+################################################################################
+# Compile the MSX2 Pocket core and upload the SD-card package as an artifact.
+# Runs on every push to main/master/msx2 and on manual dispatch.
+################################################################################
+name: Compile Core
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master, msx2]
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compile with Quartus 18.1 (Docker)
+        run: |
+          docker run --rm -v "$PWD":/build -w /build \
+            raetro/quartus:pocket \
+            quartus_sh --flow compile projects/msx_pocket.qpf
+
+      - name: Package for Pocket
+        run: python3 package-pocket.py
+
+      - name: Show resource summary
+        run: cat projects/output_files/msx_pocket.fit.summary || true
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: msx2-pocket
+          path: release/pocket/
+          if-no-files-found: error
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-reports
+          path: |
+            projects/output_files/*.rpt
+            projects/output_files/*.summary
+          if-no-files-found: ignore

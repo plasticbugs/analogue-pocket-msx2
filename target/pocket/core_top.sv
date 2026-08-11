@@ -651,7 +651,10 @@ module core_top
     wire             core_vs, core_vb; // Vertical Sync/Blank
     wire             core_de;          // Display Enable
 
-    assign core_de = ~(core_hb | core_vb);
+    // The V9938 provides a fixed-size display-enable window (borders included)
+    assign core_de = msx_video_de;
+    assign core_hb = 1'b0;
+    assign core_vb = 1'b0;
 
     video_mixer #(.RW(BPP_R),.GW(BPP_G),.BW(BPP_B)) pocket_video_mixer
     (
@@ -703,7 +706,7 @@ module core_top
     (
         // Clocks and Reset
         .clk_74a                  ( clk_74a                  ),
-        .clk_memory               ( clk_sys                  ),
+        .clk_memory               ( clk_21m                  ),
         // Pocket Bridge Slots
         .dataslot_requestwrite    ( dataslot_requestwrite    ), // [i]
         .dataslot_requestwrite_id ( dataslot_requestwrite_id ), // [i]
@@ -805,9 +808,10 @@ module core_top
     //! ------------------------------------------------------------------------
     wire pll_core_locked, pll_core_locked_s;
     wire clk_sys;       // Core : 42.954536 Mhz
-    wire clk_vid;       // Video:  5.369317 Mhz
-    wire clk_vid_90deg; // Video:  5.369317 Mhz @ 90deg Phase Shift
+    wire clk_vid;       // Video: 10.738634 Mhz
+    wire clk_vid_90deg; // Video: 10.738634 Mhz @ 90deg Phase Shift
     wire clk_ram;       // SDRAM: 85.909072 Mhz
+    wire clk_21m;       // MSX  : 21.477268 Mhz (VDP pixel engine + machine)
 
     core_pll core_pll
     (
@@ -818,6 +822,7 @@ module core_top
         .outclk_1 ( clk_vid       ),
         .outclk_2 ( clk_vid_90deg ),
         .outclk_3 ( clk_ram       ),
+        .outclk_4 ( clk_21m       ),
 
         .locked   ( pll_core_locked )
     );
@@ -832,7 +837,7 @@ module core_top
 
     usb_keyboard u_usb_kbd
     (
-        .clk        ( clk_sys    ),
+        .clk        ( clk_21m    ),
         .reset      ( reset_sw   ),
         .cont3_key  ( cont3_key  ),
         .cont3_joy  ( cont3_joy  ),
@@ -852,7 +857,7 @@ module core_top
     wire       ioctl_isFWBIOS = ioctl_download && ioctl_index == 16'h3;
     wire       ioctl_isCAS    = ioctl_download && ioctl_index == 16'h4;
 
-    always @(posedge clk_sys) begin
+    always @(posedge clk_21m) begin
         if (svc_sw) begin // Reset & Detach ROM Cartridges
             rom_enabled <= 2'b00;
         end
@@ -862,34 +867,33 @@ module core_top
         end
     end
 
-    //! CLOCKS
+    //! CLOCKS (10.74MHz enable on the 21.477MHz machine clock)
     reg ce_10m7 = 0;
-    reg ce_5m3  = 0;
 
-    always @(posedge clk_sys) begin
-        reg [2:0] div;
-
-        div     <=  div + 1'd1;
-        ce_10m7 <= !div[1:0];
-        ce_5m3  <= !div[2:0];
+    always @(posedge clk_21m) begin
+        ce_10m7 <= ~ce_10m7;
     end
 
     //! RESET
     reg [7:0] last_mapper = 8'h0;
-    always @(posedge clk_sys) begin
+    always @(posedge clk_21m) begin
         last_mapper <= dip_sw0;
     end
 
     wire mapper_reset = last_mapper != dip_sw0;
     wire msx_reset = ioctl_isROMA | ioctl_isROMB | ioctl_isBIOS | mapper_reset;
 
+    // Synchronize the (clk_74a domain) user reset into the machine domain
+    wire reset_sw_s;
+    synch_3 sync_rst(reset_sw, reset_sw_s, clk_21m);
+
     //! CORE
-    wire        hsync_n, vsync_n;
+    wire        hsync_n, vsync_n, msx_video_de;
     wire        ioctl_waitROM;
     wire  [2:0] mapper_info;
 
     reg hs_o, vs_o;
-    always @(posedge clk_sys) begin
+    always @(posedge clk_21m) begin
         hs_o <= ~hsync_n;
         if(~hs_o & ~hsync_n) begin
             vs_o <= ~vsync_n;
@@ -898,7 +902,26 @@ module core_top
 
     assign core_hs = hs_o;
     assign core_vs = vs_o;
-    assign video_preset = (dip_sw1[1]) ? 3'd1 : 3'd0;
+
+    //! PAL/NTSC scaler preset auto-detection: count lines per field
+    //! (NTSC: 242 visible lines -> preset 0, PAL: 293 -> preset 1)
+    reg [9:0] line_cnt = 0;
+    reg       pal_mode = 0;
+    reg       hs_d, vs_d;
+
+    always @(posedge clk_21m) begin
+        hs_d <= hs_o;
+        vs_d <= vs_o;
+        if (vs_o & ~vs_d) begin
+            pal_mode <= (line_cnt > 10'd280);
+            line_cnt <= 0;
+        end
+        else if (hs_o & ~hs_d) begin
+            line_cnt <= line_cnt + 1'd1;
+        end
+    end
+
+    assign video_preset = pal_mode ? 3'd1 : 3'd0;
 
     wire  [5:0] joy0    = { p1_btn_b, p1_btn_a, p1_up, p1_down, p1_left, p1_right };
     wire  [5:0] joy1    = { p2_btn_b, p2_btn_a, p2_up, p2_down, p2_left, p2_right };
@@ -909,7 +932,7 @@ module core_top
 
     joy2ps2 u_joy2key
     (
-        .clk     ( clk_sys    ),
+        .clk     ( clk_21m    ),
         .reset   ( reset_sw   ),
         .enable  ( dip_sw1[2] ),
         .key_map ( key_map    ),
@@ -917,22 +940,20 @@ module core_top
         .ps2_key ( ps2_joy    )
     );
 
-    msx1 msx1
+    msx2 msx2
     (
-        .clk            ( clk_sys              ), // [i]
-        .ce_10m7        ( ce_10m7              ), // [i]
-        .reset          ( msx_reset | reset_sw ), // [i]
+        .clk            ( clk_21m                ), // [i]
+        .ce_10m7        ( ce_10m7                ), // [i]
+        .reset          ( msx_reset | reset_sw_s ), // [i]
 
-        .vdp_pal        ( dip_sw1[0]           ), // [i]
-        .border         ( dip_sw1[1]           ), // [i]
+        .vdp_pal        ( dip_sw1[0]             ), // [i]
 
         .R              ( core_r               ), // [o]
         .G              ( core_g               ), // [o]
         .B              ( core_b               ), // [o]
         .hsync_n        ( hsync_n              ), // [o]
         .vsync_n        ( vsync_n              ), // [o]
-        .hblank         ( core_hb              ), // [o]
-        .vblank         ( core_vb              ), // [o]
+        .video_de       ( msx_video_de         ), // [o]
 
         .audio          ( core_snd_l           ), // [o]
 

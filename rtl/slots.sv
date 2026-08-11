@@ -73,7 +73,10 @@ module slots
         output     [2:0] mapper_info
     );
 
-    parameter USE_SDRAM = 1;
+    parameter USE_SDRAM    = 1;
+    parameter INTERNAL_RAM = 1; // 64kB RAM in slot 3 (MSX1); 0 when the
+                                // machine provides its own slot 3 devices
+    parameter USE_FDD      = 1; // VY0010 floppy interface in slot 1
 
     assign sound      = { sound_slot_A[14], sound_slot_A } + { sound_slot_B[14], sound_slot_B };
     assign ioctl_wait = ioctl_wait_slot_A | ioctl_wait_slot_B;
@@ -118,7 +121,8 @@ module slots
                                         rom_enabled[0] ? detected_mapper_A : 3'h0 ;
 
     // SLOT A
-    wire enableFDD_n = SLTSL_n[1] | ~((|sdram_size &  slot_A == 9) | (sdram_size == 0 & slot_A == 1));
+    wire enableFDD_n = (USE_FDD == 0) ? 1'b1 :
+                       SLTSL_n[1] | ~((|sdram_size &  slot_A == 9) | (sdram_size == 0 & slot_A == 1));
     wire enableROM_n = SLTSL_n[1] | ~enableFDD_n;
 
     wire [7:0]  d_from_slot_A;
@@ -167,6 +171,8 @@ module slots
     // Floppy Disk Drive
     wire [7:0] d_from_FDD;
 
+    generate
+    if (USE_FDD == 1) begin : fdd
     vy0010 FDD
     (
         .clk           ( clk           ),
@@ -192,6 +198,15 @@ module slots
         .sd_buff_wr    ( sd_buff_wr    ),
         .sd_din_strobe ( sd_din_strobe )
     );
+    end
+    else begin : no_fdd
+        assign d_from_FDD  = 8'hFF;
+        assign sd_lba      = 32'd0;
+        assign sd_rd       = 1'b0;
+        assign sd_wr       = 1'b0;
+        assign sd_buff_din = 8'hFF;
+    end
+    endgenerate
 
     // SLOT B
     wire [7:0]  d_from_slot_B;
@@ -240,14 +255,21 @@ module slots
     //SLOT C - RAM 64kB
     wire [7:0] ram_q;
 
-    spram #(.addr_width(16), .mem_name("RAM")) ram
-    (
-        .clock   ( clk                   ),
-        .address ( addr[15:0]            ),
-        .q       ( ram_q                 ),
-        .data    ( d_from_cpu            ),
-        .wren    ( ~(SLTSL_n[3] | wr_n ) )
-    );
+    generate
+        if (INTERNAL_RAM == 1) begin
+            spram #(.addr_width(16), .mem_name("RAM")) ram
+            (
+                .clock   ( clk                   ),
+                .address ( addr[15:0]            ),
+                .q       ( ram_q                 ),
+                .data    ( d_from_cpu            ),
+                .wren    ( ~(SLTSL_n[3] | wr_n ) )
+            );
+        end
+        else begin
+            assign ram_q = 8'hFF;
+        end
+    endgenerate
 
     //BRAM
     wire  [7:0] bram_dout;

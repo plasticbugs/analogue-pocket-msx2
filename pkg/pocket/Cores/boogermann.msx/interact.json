@@ -12,15 +12,42 @@
                 "defaultval": 0,
                 "mask": "0xFFFFFFF0",
                 "options": [
-                    { "name": "Auto",        "value": "0x00" },
-                    { "name": "None",        "value": "0x01" },
-                    { "name": "GameMaster2", "value": "0x02" },
-                    { "name": "Konami",      "value": "0x03" },
-                    { "name": "KonamiSCC",   "value": "0x04" },
-                    { "name": "ASCII8",      "value": "0x05" },
-                    { "name": "ASCII16",     "value": "0x06" },
-                    { "name": "Linear 64k",  "value": "0x07" },
-                    { "name": "R-TYPE",      "value": "0x08" }
+                    {
+                        "name": "Auto",
+                        "value": "0x00"
+                    },
+                    {
+                        "name": "None",
+                        "value": "0x01"
+                    },
+                    {
+                        "name": "GameMaster2",
+                        "value": "0x02"
+                    },
+                    {
+                        "name": "Konami",
+                        "value": "0x03"
+                    },
+                    {
+                        "name": "KonamiSCC",
+                        "value": "0x04"
+                    },
+                    {
+                        "name": "ASCII8",
+                        "value": "0x05"
+                    },
+                    {
+                        "name": "ASCII16",
+                        "value": "0x06"
+                    },
+                    {
+                        "name": "Linear 64k",
+                        "value": "0x07"
+                    },
+                    {
+                        "name": "R-TYPE",
+                        "value": "0x08"
+                    }
                 ]
             },
             {
@@ -33,15 +60,42 @@
                 "defaultval": 0,
                 "mask": "0xFFFFFF0F",
                 "options": [
-                    { "name": "Auto",        "value": "0x00" },
-                    { "name": "None",        "value": "0x01" },
-                    { "name": "GameMaster2", "value": "0x02" },
-                    { "name": "Konami",      "value": "0x03" },
-                    { "name": "KonamiSCC",   "value": "0x04" },
-                    { "name": "ASCII8",      "value": "0x05" },
-                    { "name": "ASCII16",     "value": "0x06" },
-                    { "name": "Linear 64k",  "value": "0x07" },
-                    { "name": "R-TYPE",      "value": "0x08" }
+                    {
+                        "name": "Auto",
+                        "value": "0x00"
+                    },
+                    {
+                        "name": "None",
+                        "value": "0x01"
+                    },
+                    {
+                        "name": "GameMaster2",
+                        "value": "0x02"
+                    },
+                    {
+                        "name": "Konami",
+                        "value": "0x03"
+                    },
+                    {
+                        "name": "KonamiSCC",
+                        "value": "0x04"
+                    },
+                    {
+                        "name": "ASCII8",
+                        "value": "0x05"
+                    },
+                    {
+                        "name": "ASCII16",
+                        "value": "0x06"
+                    },
+                    {
+                        "name": "Linear 64k",
+                        "value": "0x07"
+                    },
+                    {
+                        "name": "R-TYPE",
+                        "value": "0x08"
+                    }
                 ]
             },
             {
@@ -72,17 +126,6 @@
                 "value": "0x00000100"
             },
             {
-                "name": "Border",
-                "id": 4,
-                "type": "check",
-                "enabled": true,
-                "persist": true,
-                "address": "0xF1000000",
-                "defaultval": 0,
-                "mask": "0xFFFFFDFF",
-                "value": "0x00000200"
-            },
-            {
                 "name": "Enable Joy2Key",
                 "id": 1000,
                 "type": "check",
@@ -103,17 +146,50 @@
                 "mask": "0xFFFFFFF0",
                 "defaultval": 0,
                 "options": [
-                    { "name": "Disable",  "value": "0x0" },
-                    { "name": "Spacebar", "value": "0x1" },
-                    { "name": "Shift",    "value": "0x2" },
-                    { "name": "M",        "value": "0x3" },
-                    { "name": "N",        "value": "0x4" },
-                    { "name": "1",        "value": "0x5" },
-                    { "name": "2",        "value": "0x6" },
-                    { "name": "3",        "value": "0x7" },
-                    { "name": "4",        "value": "0x8" },
-                    { "name": "Esc",      "value": "0x9" },
-                    { "name": "Return",   "value": "0xA" }
+                    {
+                        "name": "Disable",
+                        "value": "0x0"
+                    },
+                    {
+                        "name": "Spacebar",
+                        "value": "0x1"
+                    },
+                    {
+                        "name": "Shift",
+                        "value": "0x2"
+                    },
+                    {
+                        "name": "M",
+                        "value": "0x3"
+                    },
+                    {
+                        "name": "N",
+                        "value": "0x4"
+                    },
+                    {
+                        "name": "1",
+                        "value": "0x5"
+                    },
+                    {
+                        "name": "2",
+                        "value": "0x6"
+                    },
+                    {
+                        "name": "3",
+                        "value": "0x7"
+                    },
+                    {
+                        "name": "4",
+                        "value": "0x8"
+                    },
+                    {
+                        "name": "Esc",
+                        "value": "0x9"
+                    },
+                    {
+                        "name": "Return",
+                        "value": "0xA"
+                    }
                 ]
             },
             {
@@ -126,17 +202,50 @@
                 "mask": "0xFFFFFF0F",
                 "defaultval": 0,
                 "options": [
-                    { "name": "Disable",  "value": "0x00" },
-                    { "name": "Spacebar", "value": "0x10" },
-                    { "name": "Shift",    "value": "0x20" },
-                    { "name": "M",        "value": "0x30" },
-                    { "name": "N",        "value": "0x40" },
-                    { "name": "1",        "value": "0x50" },
-                    { "name": "2",        "value": "0x60" },
-                    { "name": "3",        "value": "0x70" },
-                    { "name": "4",        "value": "0x80" },
-                    { "name": "Esc",      "value": "0x90" },
-                    { "name": "Return",   "value": "0xA0" }
+                    {
+                        "name": "Disable",
+                        "value": "0x00"
+                    },
+                    {
+                        "name": "Spacebar",
+                        "value": "0x10"
+                    },
+                    {
+                        "name": "Shift",
+                        "value": "0x20"
+                    },
+                    {
+                        "name": "M",
+                        "value": "0x30"
+                    },
+                    {
+                        "name": "N",
+                        "value": "0x40"
+                    },
+                    {
+                        "name": "1",
+                        "value": "0x50"
+                    },
+                    {
+                        "name": "2",
+                        "value": "0x60"
+                    },
+                    {
+                        "name": "3",
+                        "value": "0x70"
+                    },
+                    {
+                        "name": "4",
+                        "value": "0x80"
+                    },
+                    {
+                        "name": "Esc",
+                        "value": "0x90"
+                    },
+                    {
+                        "name": "Return",
+                        "value": "0xA0"
+                    }
                 ]
             },
             {
@@ -149,12 +258,30 @@
                 "mask": "0xFFFFF0FF",
                 "defaultval": 0,
                 "options": [
-                    { "name": "Disable", "value": "0x000" },
-                    { "name": "Select",  "value": "0x100" },
-                    { "name": "Stop",    "value": "0x200" },
-                    { "name": "Graph",   "value": "0x300" },
-                    { "name": "Crtl",    "value": "0x400" },
-                    { "name": "F1",      "value": "0x500" }
+                    {
+                        "name": "Disable",
+                        "value": "0x000"
+                    },
+                    {
+                        "name": "Select",
+                        "value": "0x100"
+                    },
+                    {
+                        "name": "Stop",
+                        "value": "0x200"
+                    },
+                    {
+                        "name": "Graph",
+                        "value": "0x300"
+                    },
+                    {
+                        "name": "Crtl",
+                        "value": "0x400"
+                    },
+                    {
+                        "name": "F1",
+                        "value": "0x500"
+                    }
                 ]
             },
             {
@@ -167,12 +294,30 @@
                 "mask": "0xFFFF0FFF",
                 "defaultval": 0,
                 "options": [
-                    { "name": "Disable", "value": "0x0000" },
-                    { "name": "Select",  "value": "0x1000" },
-                    { "name": "Stop",    "value": "0x2000" },
-                    { "name": "Graph",   "value": "0x3000" },
-                    { "name": "Crtl",    "value": "0x4000" },
-                    { "name": "F5",      "value": "0x5000" }
+                    {
+                        "name": "Disable",
+                        "value": "0x0000"
+                    },
+                    {
+                        "name": "Select",
+                        "value": "0x1000"
+                    },
+                    {
+                        "name": "Stop",
+                        "value": "0x2000"
+                    },
+                    {
+                        "name": "Graph",
+                        "value": "0x3000"
+                    },
+                    {
+                        "name": "Crtl",
+                        "value": "0x4000"
+                    },
+                    {
+                        "name": "F5",
+                        "value": "0x5000"
+                    }
                 ]
             },
             {
@@ -185,13 +330,34 @@
                 "mask": "0xFFF0FFFF",
                 "defaultval": 0,
                 "options": [
-                    { "name": "Disable",  "value": "0x00000" },
-                    { "name": "Spacebar", "value": "0x10000" },
-                    { "name": "F1",       "value": "0x20000" },
-                    { "name": "F2",       "value": "0x30000" },
-                    { "name": "F3",       "value": "0x40000" },
-                    { "name": "F4",       "value": "0x50000" },
-                    { "name": "F5",       "value": "0x60000" }
+                    {
+                        "name": "Disable",
+                        "value": "0x00000"
+                    },
+                    {
+                        "name": "Spacebar",
+                        "value": "0x10000"
+                    },
+                    {
+                        "name": "F1",
+                        "value": "0x20000"
+                    },
+                    {
+                        "name": "F2",
+                        "value": "0x30000"
+                    },
+                    {
+                        "name": "F3",
+                        "value": "0x40000"
+                    },
+                    {
+                        "name": "F4",
+                        "value": "0x50000"
+                    },
+                    {
+                        "name": "F5",
+                        "value": "0x60000"
+                    }
                 ]
             },
             {
@@ -204,13 +370,34 @@
                 "mask": "0xFF0FFFFF",
                 "defaultval": 0,
                 "options": [
-                    { "name": "Disable",  "value": "0x000000" },
-                    { "name": "Spacebar", "value": "0x100000" },
-                    { "name": "F1",       "value": "0x200000" },
-                    { "name": "F2",       "value": "0x300000" },
-                    { "name": "F3",       "value": "0x400000" },
-                    { "name": "F4",       "value": "0x500000" },
-                    { "name": "F5",       "value": "0x600000" }
+                    {
+                        "name": "Disable",
+                        "value": "0x000000"
+                    },
+                    {
+                        "name": "Spacebar",
+                        "value": "0x100000"
+                    },
+                    {
+                        "name": "F1",
+                        "value": "0x200000"
+                    },
+                    {
+                        "name": "F2",
+                        "value": "0x300000"
+                    },
+                    {
+                        "name": "F3",
+                        "value": "0x400000"
+                    },
+                    {
+                        "name": "F4",
+                        "value": "0x500000"
+                    },
+                    {
+                        "name": "F5",
+                        "value": "0x600000"
+                    }
                 ]
             },
             {
