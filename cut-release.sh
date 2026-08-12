@@ -13,8 +13,12 @@ TAG="$1"
 NOTES="$2"
 [ -n "$TAG" ] || { echo "usage: $0 <tag> [notes]" >&2; exit 1; }
 
-REPO=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
+# Resolve the repo from the branch's tracking remote, not from origin: this
+# core is a fork, and origin points at the upstream project.
+REMOTE=$(git rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>/dev/null | cut -d/ -f1)
+REMOTE=${REMOTE:-origin}
+REPO=$(git remote get-url "$REMOTE" | sed -E 's#(git@github.com:|https://github.com/)##; s#\.git$##')
 
 RUN=$(gh run list --repo "$REPO" --workflow compile.yml --branch "$BRANCH" \
         --status success --limit 1 --json databaseId --jq '.[0].databaseId')
