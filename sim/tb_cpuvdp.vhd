@@ -49,20 +49,28 @@ architecture sim of tb_cpuvdp is
     type stack_t is array (0 to 255) of std_logic_vector(7 downto 0);
     signal stack : stack_t := (others => (others => '0'));
     type ram_t is array (0 to 65535) of std_logic_vector(7 downto 0);
-    signal vram0 : ram_t := (others => (others => '0'));
+    function init_vram return ram_t is
+        variable v : ram_t := (others => (others => '0'));
+    begin
+        for i in 0 to 767 loop   v(i) := x"00"; end loop;          -- name table
+        for i in 2048 to 4095 loop v(i) := x"AA"; end loop;        -- pattern: stripes
+        for i in 8192 to 8223 loop v(i) := x"F1"; end loop;        -- colour table
+        return v;
+    end function;
+    signal vram0 : ram_t := init_vram;
     signal vram1 : ram_t := (others => (others => '0'));
 
     -- Z80 test program at 0x0000
     type rom_t is array (0 to 63) of std_logic_vector(7 downto 0);
     constant prog : rom_t := (
-        x"3E", x"60", x"D3", x"99", x"3E", x"81", x"D3", x"99",
-        x"ED", x"56", x"FB", x"18", x"FE", x"00", x"00", x"00",
-        x"00", x"00", x"00", x"00", x"00", x"00", x"00", x"00",
-        x"00", x"00", x"00", x"00", x"00", x"00", x"00", x"00",
-        x"00", x"00", x"00", x"00", x"00", x"00", x"00", x"00",
-        x"00", x"00", x"00", x"00", x"00", x"00", x"00", x"00",
-        x"00", x"00", x"00", x"00", x"00", x"00", x"00", x"00",
-        x"DB", x"99", x"D3", x"2F", x"FB", x"ED", x"4D", x"00");
+        x"3E", x"00", x"D3", x"99", x"3E", x"80", x"D3", x"99",
+        x"3E", x"40", x"D3", x"99", x"3E", x"81", x"D3", x"99",
+        x"3E", x"00", x"D3", x"99", x"3E", x"82", x"D3", x"99",
+        x"3E", x"80", x"D3", x"99", x"3E", x"83", x"D3", x"99",
+        x"3E", x"01", x"D3", x"99", x"3E", x"84", x"D3", x"99",
+        x"3E", x"F1", x"D3", x"99", x"3E", x"87", x"D3", x"99",
+        x"18", x"FE", x"00", x"00", x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00", x"00", x"00", x"00", x"00");
 
     -- CPU clock enables: 3.58MHz from 21.477MHz (divide by 6)
     signal cen_div : integer range 0 to 5 := 0;
@@ -194,25 +202,65 @@ begin
         end if;
     end process;
 
-    check: process
+    scan: process(clk21m)
+        variable phase   : integer := 0;
+        variable hs_prev : std_logic := '1';
+        variable vs_prev : std_logic := '1';
+        variable line    : integer := 0;
+        variable field   : integer := 0;
+        variable col     : integer := 0;
+        variable nonblack: integer := 0;   -- samples this line that are not border
+        variable first_ln: integer := -1;  -- first DE line with picture
+        variable last_ln : integer := -1;
+        variable de_line : integer := 0;
+        variable transits: integer := 0;
+        variable prev_px : std_logic_vector(17 downto 0) := (others => '0');
+        variable px      : std_logic_vector(17 downto 0);
+        variable had_de  : boolean := false;
     begin
-        wait for 100 ms;
-        report "VBLANK interrupts serviced in 100ms: " & integer'image(rb_idx);
-        report "INT_n cleared (rising edges): " & integer'image(n_int_cleared) &
-               "   INT_n low for " & integer'image((n_int_low*100)/n_cycles) & "% of cycles";
-        report "vdp_req total=" & integer'image(n_vdpreq) &
-               "  reads=" & integer'image(n_reads) &
-               "  writes=" & integer'image(n_writes) &
-               "  reads of port 0x99 (status)=" & integer'image(n_rd99);
-        report "(expected about 6 at 60Hz)";
-        if rb_idx >= 4 and rb_idx <= 8 then
-            report "PASS: interrupt rate is correct and the flag clears";
-        elsif rb_idx = 0 then
-            report "FAIL: no interrupts reached the CPU";
-        else
-            report "FAIL: runaway interrupts - S#0 read is not clearing the flag";
+        if rising_edge(clk21m) and reset = '0' then
+            if phase = 1 and de = '1' then
+                px := vr & vg & vb;
+                if px /= "000000000000000000" then nonblack := nonblack + 1; end if;
+                if col > 0 and px /= prev_px then transits := transits + 1; end if;
+                prev_px := px;
+                col := col + 1;
+                had_de := true;
+            end if;
+            if phase = 1 then phase := 0; else phase := 1; end if;
+
+            if hs_prev = '1' and hs_n = '0' then
+                if had_de then
+                    de_line := de_line + 1;
+                    if field = 3 then
+                        if nonblack > 0 then
+                            if first_ln < 0 then first_ln := de_line; end if;
+                            last_ln := de_line;
+                        end if;
+                        if de_line = 120 then
+                            report "mid display line: " & integer'image(col) &
+                                   " samples, " & integer'image(nonblack) &
+                                   " lit, " & integer'image(transits) &
+                                   " colour changes";
+                        end if;
+                    end if;
+                end if;
+                col := 0; nonblack := 0; transits := 0; had_de := false;
+                line := line + 1;
+            end if;
+
+            if vs_prev = '1' and vs_n = '0' then
+                if field = 3 then
+                    report "picture occupies DE lines " & integer'image(first_ln) &
+                           " to " & integer'image(last_ln) & " of " &
+                           integer'image(de_line);
+                    report "DONE" severity failure;
+                end if;
+                field := field + 1; line := 0; de_line := 0;
+                first_ln := -1; last_ln := -1;
+            end if;
+            hs_prev := hs_n; vs_prev := vs_n;
         end if;
-        report "DONE" severity failure;
     end process;
 
 end sim;

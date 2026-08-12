@@ -299,7 +299,7 @@ module msx2
         .PVIDEOR         ( vdp_r         ),
         .PVIDEOG         ( vdp_g         ),
         .PVIDEOB         ( vdp_b         ),
-        .PVIDEODE        ( video_de      ),
+        .PVIDEODE        ( vdp_de        ),
 
         .PVIDEOHS_N      ( hsync_n       ),
         .PVIDEOVS_N      ( vsync_n       ),
@@ -317,6 +317,34 @@ module msx2
     assign R = {vdp_r, vdp_r[5:4]};
     assign G = {vdp_g, vdp_g[5:4]};
     assign B = {vdp_b, vdp_b[5:4]};
+
+    //--------------------------------------------------------------------------
+    // Display enable trim
+    //
+    // The VDP's colour pipeline has not settled when its display window opens,
+    // so the first pixel of every line carries a stale colour. A CRT hides it
+    // in overscan; the Pocket scaler shows it as a stray column down the left
+    // edge. Drop the first DE_TRIM clocks of the window -- two output samples,
+    // which keeps the two-samples-per-MSX-pixel alignment intact.
+    //
+    // The declared scaler width in video.json must match: 1196 - DE_TRIM clocks
+    // at half the machine clock = 596 pixels.
+    //--------------------------------------------------------------------------
+    localparam DE_TRIM = 4;
+
+    wire       vdp_de;
+    reg  [2:0] de_cnt;
+
+    always @(posedge clk) begin
+        if (!vdp_de) begin
+            de_cnt <= 0;
+        end
+        else if (de_cnt != DE_TRIM[2:0]) begin
+            de_cnt <= de_cnt + 1'd1;
+        end
+    end
+
+    assign video_de = vdp_de & (de_cnt == DE_TRIM[2:0]);
 
     //--------------------------------------------------------------------------
     // RP-5C01 RTC
