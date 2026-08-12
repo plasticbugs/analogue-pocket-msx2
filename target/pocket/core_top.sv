@@ -559,7 +559,7 @@ module core_top
 
     pause_crtl core_pause
     (
-        .clk_sys    ( clk_sys         ),
+        .clk_sys    ( clk_21m         ),
         .os_inmenu  ( osnotify_inmenu ),
         .pause_req  ( pause_req       ),
         .pause_core ( pause_core      )
@@ -579,7 +579,7 @@ module core_top
     (
         // Clocks and Reset
         .clk_74a          ( clk_74a            ),
-        .clk_sync         ( clk_sys            ),
+        .clk_sync         ( clk_21m            ),
         .reset_n          ( reset_n            ),
         // Pocket Bridge
         .bridge_addr      ( bridge_addr        ),
@@ -759,7 +759,7 @@ module core_top
 
     gamepad #(.JOY_PADS(JOY_PADS),.JOY_ALT(JOY_ALT)) pocket_gamepad
     (
-        .clk_sys   ( clk_sys   ),
+        .clk_sys   ( clk_21m   ),
         // Pocket PAD Interface
         .cont1_key ( cont1_key ), .cont1_joy ( cont1_joy ),
         .cont2_key ( cont2_key ), .cont2_joy ( cont2_joy ),
