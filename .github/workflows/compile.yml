@@ -8,10 +8,13 @@ on:
   workflow_dispatch:
   push:
     branches: [main, master, msx2]
+    tags: ["v*"]
 
 jobs:
   compile:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -43,6 +46,17 @@ jobs:
           name: msx2-pocket
           path: release/pocket/
           if-no-files-found: error
+
+      - name: Publish release (tag pushes only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd release/pocket && zip -qr ../../msx2-pocket-sdcard.zip . && cd ../..
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "MSX2 for Analogue Pocket ${GITHUB_REF_NAME}" \
+            --notes "Unzip onto the Pocket SD card root, overwriting previous files. Cartridge .rom files go in Assets/msx/common/." \
+            msx2-pocket-sdcard.zip
 
       - name: Upload reports
         if: always()
