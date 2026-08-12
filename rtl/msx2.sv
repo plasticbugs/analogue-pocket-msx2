@@ -449,23 +449,34 @@ module msx2
     // (64kB is the MSX2 minimum; segments alias above that, as on real
     // small-mapper machines. Sized to fit the Pocket's block RAM.)
     //--------------------------------------------------------------------------
+    // Only SEG_BITS of each segment register are implemented. The unimplemented
+    // bits must read back as 1, because software sizes the mapper by writing a
+    // segment number and reading it back: storing all 8 bits would advertise
+    // 256 segments (4MB) while only SEG_BITS worth of RAM exists, and every
+    // access above that would silently alias onto memory already in use.
+    localparam SEG_BITS = 2; // 4 segments x 16kB = 64kB
+
     reg  [7:0] map_reg[3:0];
     wire [7:0] map_q;
-    wire [1:0] map_seg = map_reg[page][1:0];
+    wire [SEG_BITS-1:0] map_seg = map_reg[page][SEG_BITS-1:0];
+
+    function [7:0] map_mask(input [7:0] seg);
+        map_mask = {{(8-SEG_BITS){1'b1}}, seg[SEG_BITS-1:0]};
+    endfunction
 
     always @(posedge clk) begin
         if (reset) begin
-            map_reg[0] <= 8'd3;
-            map_reg[1] <= 8'd2;
-            map_reg[2] <= 8'd1;
-            map_reg[3] <= 8'd0;
+            map_reg[0] <= map_mask(8'd3);
+            map_reg[1] <= map_mask(8'd2);
+            map_reg[2] <= map_mask(8'd1);
+            map_reg[3] <= map_mask(8'd0);
         end
         else if (map_sel & ~wr_n & clk_en_3m58_p) begin
-            map_reg[a[1:0]] <= d_from_cpu;
+            map_reg[a[1:0]] <= map_mask(d_from_cpu);
         end
     end
 
-    spram #(.addr_width(16), .mem_name("MAPRAM")) map_ram
+    spram #(.addr_width(SEG_BITS+14), .mem_name("MAPRAM")) map_ram
     (
         .clock   ( clk                        ),
         .address ( {map_seg, a[13:0]}         ),
