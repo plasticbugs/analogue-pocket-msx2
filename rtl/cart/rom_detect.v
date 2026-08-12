@@ -44,6 +44,19 @@ module rom_detect
         last_isROM = ioctl_isROM;
     end
 
+    // ioctl_wr is held high for several clocks per byte (DIO_HOLD), so acting
+    // on the level feeds every ROM byte into the detector that many times. The
+    // mapper signatures are three-byte sequences -- LD (6000h),A and friends --
+    // which can never appear in a stream where each byte repeats, so nothing
+    // was ever detected and every MegaROM fell through to the ASCII16 default.
+    // Take one sample per byte.
+    reg  last_rom_we;
+    wire rom_we_edge = rom_we & ~last_rom_we;
+
+    always @(posedge clk) begin
+        last_rom_we <= rom_we;
+    end
+
     always @(posedge clk) begin
         reg [7:0] a0,a1,a2;
 
@@ -58,7 +71,7 @@ module rom_detect
             a1    <= 0;
             a2    <= 0;
         end
-        if (rom_we) begin
+        if (rom_we_edge) begin
             rom_size <= ioctl_addr + 1'd1 ;
             if (ioctl_addr[24:7] == 0) begin
                 if (ioctl_addr[5:3] == 0) begin

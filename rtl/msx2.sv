@@ -179,31 +179,68 @@ module msx2
 
     //--------------------------------------------------------------------------
     // Device request strobe (emsx style: one clk pulse per CPU access)
+    //
+    // The CPU bus is registered before it reaches the devices, as the reference
+    // implementation does, so that address, data and the read/write strobes all
+    // present to the VDP on the same edge. Building the strobe combinationally
+    // from the raw T80 outputs lets them arrive fractionally apart, which
+    // intermittently mistimes an access. That is not benign here: a VDP palette
+    // entry is written as two consecutive bytes, so one mistimed access desyncs
+    // the whole palette (a green cast), and the sprite attribute writes fail
+    // the same way. Both symptoms varied from boot to boot.
     //--------------------------------------------------------------------------
-    reg  iack;
-    wire req = ((~mreq_n | ~iorq_n) & (~rd_n | ~wr_n) & ~iack);
+    reg         r_mreq_n, r_iorq_n, r_rd_n, r_wr_n, r_m1_n;
+    reg  [15:0] r_a;
+    reg   [7:0] r_d;
+    reg         iack;
+
+    wire req = ((~r_mreq_n | ~r_iorq_n) & (~r_rd_n | ~r_wr_n) & ~iack);
 
     always @(posedge clk) begin
         if (reset) begin
-            iack <= 0;
+            r_mreq_n <= 1'b1;
+            r_iorq_n <= 1'b1;
+            r_rd_n   <= 1'b1;
+            r_wr_n   <= 1'b1;
+            r_m1_n   <= 1'b1;
+            r_a      <= 16'hFFFF;
+            r_d      <= 8'hFF;
+            iack     <= 1'b0;
         end
         else begin
-            if (mreq_n & iorq_n) begin
-                iack <= 0;
+            r_mreq_n <= mreq_n;
+            r_iorq_n <= iorq_n;
+            r_rd_n   <= rd_n;
+            r_wr_n   <= wr_n;
+            r_m1_n   <= m1_n;
+            r_a      <= a;
+            r_d      <= d_from_cpu;
+
+            if (r_mreq_n & r_iorq_n) begin
+                iack <= 1'b0;
             end
             else if (req) begin
-                iack <= 1;
+                iack <= 1'b1;
             end
         end
     end
 
+    // Requests are decoded from the registered bus so they stay aligned with
+    // the address and data the devices are given.
+    wire r_io_en   = ~r_iorq_n & r_m1_n;
+    wire r_vdp_sel = r_io_en & (r_a[7:2] == 6'b100110);  // 98-9B
+    wire r_rtc_sel = r_io_en & (r_a[7:1] == 7'b1011010); // B4-B5
+    wire r_wrt     = ~r_wr_n;
+
+    wire vdp_req  = req & r_vdp_sel;
+    wire rtc_req  = req & r_rtc_sel;
+
+    // The read multiplexer stays on the live bus so data is back well within
+    // the CPU's access window.
     wire io_en    = ~iorq_n & m1_n;
     wire vdp_sel  = io_en & (a[7:2] == 6'b100110);  // 98-9B
     wire rtc_sel  = io_en & (a[7:1] == 7'b1011010); // B4-B5
     wire map_sel  = io_en & (a[7:2] == 6'b111111);  // FC-FF
-
-    wire vdp_req  = req & vdp_sel;
-    wire rtc_req  = req & rtc_sel;
 
     //--------------------------------------------------------------------------
     // BIOS ROMs (C-BIOS MSX2: main 32kB, logo 16kB, sub 16kB)
@@ -279,10 +316,10 @@ module msx2
         .RESET           ( reset         ),
         .REQ             ( vdp_req       ),
         .ACK             (               ),
-        .WRT             ( ~wr_n         ),
-        .ADR             ( a             ),
+        .WRT             ( r_wrt         ),
+        .ADR             ( r_a           ),
         .DBI             ( d_from_vdp    ),
-        .DBO             ( d_from_cpu    ),
+        .DBO             ( r_d           ),
 
         .INT_N           ( vdp_int_n     ),
 
@@ -375,10 +412,10 @@ module msx2
         .clkena ( rtc_ce_10hz ),
         .req    ( rtc_req     ),
         .ack    (             ),
-        .wrt    ( ~wr_n       ),
-        .adr    ( a           ),
+        .wrt    ( r_wrt       ),
+        .adr    ( r_a         ),
         .dbi    ( d_from_rtc  ),
-        .dbo    ( d_from_cpu  )
+        .dbo    ( r_d         )
     );
 
     //--------------------------------------------------------------------------
