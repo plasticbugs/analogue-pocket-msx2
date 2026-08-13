@@ -41,7 +41,7 @@ module rom_detect
     reg               game1, game2;
 
     always @(posedge clk) begin
-        last_isROM = ioctl_isROM;
+        last_isROM <= ioctl_isROM;
     end
 
     // ioctl_wr is held high for several clocks per byte (DIO_HOLD), so acting
@@ -91,15 +91,26 @@ module rom_detect
             a0 <= a1;
             a1 <= a2;
             a2 <= ioctl_dout;
+            // Count LD (nnnn),A instructions targeting mapper bank registers.
+            // Match the register WINDOW (high byte range), not one exact
+            // address: games hit any address inside a window -- Bubble Bobble
+            // writes its ASCII8 banks at 77F8h/7FF8h, which an exact-address
+            // match (or a low-byte-zero filter) never sees.
+            //   ASCII8     : 6000-7FFF in four 800h windows
+            //   ASCII16    : 6000-67FF, 7000-77FF
+            //   Konami     : 6000-67FF, 8000-87FF, A000-A7FF
+            //   Konami SCC : 5000-57FF, 7000-77FF, 9000-97FF, B000-B7FF
             if (ioctl_addr > 2)	begin
-                if (a0 == 8'h32 && a1 == 0) begin
-                    case (a2)
-                        8'h60, 8'h70: begin asc16 <= asc16 + 1'd1; asc8  <= asc8  + 1'd1; end
-                        8'h68, 8'h78: begin asc8  <= asc8  + 1'd1; asc16 <= asc16 - 1'd1; end
-                    endcase
-                    case (a2)
-                        8'h60, 8'h80, 8'ha0:        begin kon4 <= kon4 + 1'd1; end
-                        8'h50, 8'h70, 8'h90, 8'hb0: begin kon5 <= kon5 + 1'd1; end
+                if (a0 == 8'h32) begin
+                    case (a2[7:3])
+                        5'b01010:            begin kon5 <= kon5 + 1'd1; end                                                          // 50xx-57xx
+                        5'b01100:            begin asc8 <= asc8 + 1'd1; asc16 <= asc16 + 1'd1; kon4 <= kon4 + 1'd1; end              // 60xx-67xx
+                        5'b01101:            begin asc8 <= asc8 + 1'd1; end                                                          // 68xx-6Fxx
+                        5'b01110:            begin asc8 <= asc8 + 1'd1; asc16 <= asc16 + 1'd1; kon5 <= kon5 + 1'd1; end              // 70xx-77xx
+                        5'b01111:            begin asc8 <= asc8 + 1'd1; end                                                          // 78xx-7Fxx
+                        5'b10000, 5'b10100:  begin kon4 <= kon4 + 1'd1; end                                                          // 80xx-87xx, A0xx-A7xx
+                        5'b10010, 5'b10110:  begin kon5 <= kon5 + 1'd1; end                                                          // 90xx-97xx, B0xx-B7xx
+                        default: ;
                     endcase
                 end
             end

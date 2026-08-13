@@ -351,9 +351,51 @@ module msx2
         .LEGACY_VGA      ( 1'b0          )
     );
 
-    assign R = {vdp_r, vdp_r[5:4]};
-    assign G = {vdp_g, vdp_g[5:4]};
-    assign B = {vdp_b, vdp_b[5:4]};
+    //--------------------------------------------------------------------------
+    // DIAGNOSTIC overlay: paint the first 32 and the last 8 visible lines in
+    // counted 8-line colour bands (red/green/blue/white from the top; magenta
+    // then cyan at the bottom; odd lines dimmed) so a photograph of the panel
+    // reveals exactly which output lines the Pocket scaler displays and which
+    // it crops. Set DIAG_LINES = 0 for normal releases.
+    //--------------------------------------------------------------------------
+    localparam DIAG_LINES = 1;
+
+    wire [8:0] vis_line  = de_line_cnt - v_trim - 1'd1;
+    wire [8:0] last_band = vdp_pal ? 9'd280 : 9'd232;
+
+    reg  [23:0] diag_rgb;
+    reg         diag_on;
+
+    always @* begin
+        diag_on  = 1'b0;
+        diag_rgb = 24'h000000;
+        if (DIAG_LINES) begin
+            if (vis_line < 9'd32) begin
+                diag_on = 1'b1;
+                case ({vis_line[4:3], vis_line[0]})
+                    3'b000: diag_rgb = 24'hFF0000;  // lines  0-7  red
+                    3'b001: diag_rgb = 24'h700000;
+                    3'b010: diag_rgb = 24'h00FF00;  // lines  8-15 green
+                    3'b011: diag_rgb = 24'h007000;
+                    3'b100: diag_rgb = 24'h0060FF;  // lines 16-23 blue
+                    3'b101: diag_rgb = 24'h002870;
+                    3'b110: diag_rgb = 24'hFFFFFF;  // lines 24-31 white
+                    3'b111: diag_rgb = 24'h707070;
+                endcase
+            end
+            else if (vis_line >= last_band && vis_line < last_band + 9'd8) begin
+                diag_on  = 1'b1;
+                if (vis_line >= last_band + 9'd4)
+                    diag_rgb = vis_line[0] ? 24'h007070 : 24'h00FFFF;  // last 4: cyan
+                else
+                    diag_rgb = vis_line[0] ? 24'h700070 : 24'hFF00FF;  // magenta
+            end
+        end
+    end
+
+    assign R = diag_on ? diag_rgb[23:16] : {vdp_r, vdp_r[5:4]};
+    assign G = diag_on ? diag_rgb[15:8]  : {vdp_g, vdp_g[5:4]};
+    assign B = diag_on ? diag_rgb[7:0]   : {vdp_b, vdp_b[5:4]};
 
     //--------------------------------------------------------------------------
     // Display enable trim
