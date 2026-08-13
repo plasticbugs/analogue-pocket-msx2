@@ -367,13 +367,21 @@ module msx2
     wire [8:0] vis_line  = de_line_cnt - v_trim - 1'd1;
     wire [8:0] last_band = vdp_pal ? 9'd280 : 9'd232;
 
+    // horizontal position within the DE line, so the bars can be confined to
+    // the left quarter and the game stays visible beside them
+    reg [10:0] x_cnt;
+    always @(posedge clk) begin
+        if (!vdp_de) x_cnt <= 0;
+        else         x_cnt <= x_cnt + 1'd1;
+    end
+
     reg  [23:0] diag_rgb;
     reg         diag_on;
 
     always @* begin
         diag_on  = 1'b0;
         diag_rgb = 24'h000000;
-        if (DIAG_LINES) begin
+        if (DIAG_LINES && x_cnt < 11'd280) begin
             if (vis_line < 9'd32) begin
                 diag_on = 1'b1;
                 case ({vis_line[4:3], vis_line[0]})
