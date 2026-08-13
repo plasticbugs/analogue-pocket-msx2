@@ -102,12 +102,16 @@ module msx2
     //--------------------------------------------------------------------------
     // Audio MIX
     //--------------------------------------------------------------------------
+    // The AY PSG mix is unipolar (0..16368 once shifted); on its own it just
+    // fits the old 14-bit compressor window, but adding a cartridge SCC
+    // (+/-9600 typical) drove every loud passage into the hard-clip entries,
+    // audibly destroying Konami SCC music. Sum at 17 bits and halve instead:
+    // worst case |PSG + two carts| < 2^16, so this can never clip.
     wire  [9:0] audioPSG   = ay_ch_mix + {keybeep, 5'b00000} + {(cas_audio_in & ~cas_motor), 4'b0000};
     wire [15:0] fm         = {2'b0, audioPSG, 4'b0000};
     wire [16:0] audio_mix  = {sound_slots[15], sound_slots} + {fm[15], fm};
-    wire [15:0] compr[7:0] = '{{1'b1, audio_mix[13:0], 1'b0}, 16'h8000, 16'h8000, 16'h8000, 16'h7FFF, 16'h7FFF, 16'h7FFF,  {1'b0, audio_mix[13:0], 1'b0}};
 
-    assign audio = compr[audio_mix[16:14]];
+    assign audio = audio_mix[16:1];
 
     //--------------------------------------------------------------------------
     // Clock generation
