@@ -116,7 +116,13 @@ PACKAGE VDP_PACKAGE IS
 
     -- LEFT-TOP POSITION OF VISIBLE AREA
     CONSTANT OFFSET_X                           : STD_LOGIC_VECTOR(  6 DOWNTO 0 ) := "0110001"; -- 49
-    SHARED VARIABLE OFFSET_Y                    : STD_LOGIC_VECTOR(  6 DOWNTO 0 ) := "0010011"; -- 19 => managed by Switched I/O Ports
+    -- Was a SHARED VARIABLE "managed by Switched I/O Ports" in the OCM
+    -- design. We do not port swioports, so nothing ever drives it: GHDL
+    -- keeps the initializer (19) but Quartus synthesises the undriven
+    -- variable to 0, which starts the picture 19 lines early on hardware
+    -- and pushes the top of the display area out of the visible window.
+    -- A constant makes synthesis match simulation.
+    CONSTANT OFFSET_Y                           : STD_LOGIC_VECTOR(  6 DOWNTO 0 ) := "0010011"; -- 19
 
     CONSTANT LED_TV_X_NTSC                      : INTEGER := -3;
     CONSTANT LED_TV_Y_NTSC                      : INTEGER := 1;

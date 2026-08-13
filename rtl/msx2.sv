@@ -362,7 +362,7 @@ module msx2
     // reveals exactly which output lines the Pocket scaler displays and which
     // it crops. Set DIAG_LINES = 0 for normal releases.
     //--------------------------------------------------------------------------
-    localparam DIAG_LINES = 1;
+    localparam DIAG_LINES = 0;
 
     wire [8:0] vis_line  = de_line_cnt - v_trim - 1'd1;
     wire [8:0] last_band = vdp_pal ? 9'd280 : 9'd232;
