@@ -944,7 +944,7 @@ module core_top
     (
         .clk            ( clk_21m                ), // [i]
         .ce_10m7        ( ce_10m7                ), // [i]
-        .reset          ( msx_reset | reset_sw_s ), // [i]
+        .reset_i        ( msx_reset | reset_sw_s ), // [i]
 
         .vdp_pal        ( dip_sw1[0]             ), // [i]
 

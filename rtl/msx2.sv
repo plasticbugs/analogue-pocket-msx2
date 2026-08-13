@@ -41,7 +41,7 @@ module msx2
     (
         input         clk,
         input         ce_10m7,
-        input         reset,
+        input         reset_i,
         // Video
         output  [7:0] R,
         output  [7:0] G,
@@ -98,6 +98,31 @@ module msx2
         input         sd_buff_wr,
         input         sd_din_strobe
     );
+
+    //--------------------------------------------------------------------------
+    // Reset with VRAM wipe
+    //
+    // When the external reset releases (ROM load finished, mapper changed,
+    // reset button), hold the machine in reset ~3ms longer while both VRAM
+    // banks are written to zero, so every boot starts from the clean state
+    // games expect from cold hardware.
+    //--------------------------------------------------------------------------
+    reg [16:0] vram_clr_cnt = 17'h10000;
+    reg        reset_i_d;
+
+    wire        vram_clearing = ~vram_clr_cnt[16];
+    wire [15:0] vram_clr_addr = vram_clr_cnt[15:0];
+    wire        reset         = reset_i | vram_clearing;
+
+    always @(posedge clk) begin
+        reset_i_d <= reset_i;
+        if (reset_i_d & ~reset_i) begin
+            vram_clr_cnt <= 0;
+        end
+        else if (vram_clearing) begin
+            vram_clr_cnt <= vram_clr_cnt + 1'd1;
+        end
+    end
 
     //--------------------------------------------------------------------------
     // Audio MIX
@@ -283,28 +308,40 @@ module msx2
     //--------------------------------------------------------------------------
     // Video RAM 128k (two 64k banks side by side on a 16bit read bus,
     // bank selected by address bit 16)
+    //
+    // The banks are wiped by the reset sequencer below: BRAM contents
+    // otherwise survive every reset short of an FPGA reconfigure, so a
+    // reloaded game would boot into the previous game's VRAM. C-BIOS does
+    // not clear VRAM, and games written for cold hardware assume it is
+    // clean -- Bubble Bobble's sprites break and it eventually crashes when
+    // its tables sit on leftovers.
     //--------------------------------------------------------------------------
     wire [16:0] vdp_pram_a;
     wire  [7:0] vdp_pram_do;
     wire        vdp_pramwe_n;
     wire  [7:0] vram0_q, vram1_q;
 
+    wire [15:0] vram_a    = vram_clearing ? vram_clr_addr    : vdp_pram_a[15:0];
+    wire  [7:0] vram_d    = vram_clearing ? 8'h00            : vdp_pram_do;
+    wire        vram0_we  = vram_clearing ? 1'b1 : (~vdp_pramwe_n & ~vdp_pram_a[16]);
+    wire        vram1_we  = vram_clearing ? 1'b1 : (~vdp_pramwe_n &  vdp_pram_a[16]);
+
     spram #(.addr_width(16), .mem_name("VRAM0")) vram0
     (
-        .clock   ( clk                             ),
-        .address ( vdp_pram_a[15:0]                ),
-        .wren    ( ~vdp_pramwe_n & ~vdp_pram_a[16] ),
-        .data    ( vdp_pram_do                     ),
-        .q       ( vram0_q                         )
+        .clock   ( clk      ),
+        .address ( vram_a   ),
+        .wren    ( vram0_we ),
+        .data    ( vram_d   ),
+        .q       ( vram0_q  )
     );
 
     spram #(.addr_width(16), .mem_name("VRAM1")) vram1
     (
-        .clock   ( clk                             ),
-        .address ( vdp_pram_a[15:0]                ),
-        .wren    ( ~vdp_pramwe_n & vdp_pram_a[16]  ),
-        .data    ( vdp_pram_do                     ),
-        .q       ( vram1_q                         )
+        .clock   ( clk      ),
+        .address ( vram_a   ),
+        .wren    ( vram1_we ),
+        .data    ( vram_d   ),
+        .q       ( vram1_q  )
     );
 
     //--------------------------------------------------------------------------
