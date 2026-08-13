@@ -3,3 +3,10 @@ ram.vhd
 work-obj93.cf
 tb_vdp
 *.o
+tb_cpuvdp
+tb_framedump
+tb_framedump5
+tb_edges
+frame.txt
+frame5.txt
+vdpdump.txt

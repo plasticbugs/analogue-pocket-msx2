@@ -358,14 +358,21 @@ module msx2
     //--------------------------------------------------------------------------
     // Display enable trim
     //
-    // The VDP's colour pipeline has not settled when its display window opens,
-    // so the first pixel of every line carries a stale colour. A CRT hides it
-    // in overscan; the Pocket scaler shows it as a stray column down the left
-    // edge. Drop the first DE_TRIM clocks of the window -- two output samples,
-    // which keeps the two-samples-per-MSX-pixel alignment intact.
+    // Horizontal: the VDP's colour pipeline has not settled when its display
+    // window opens, so the first pixel of every line carries a stale colour.
+    // A CRT hides it in overscan; the Pocket scaler shows it as a stray column
+    // down the left edge. Drop the first DE_TRIM clocks of the window -- two
+    // output samples, which keeps the two-samples-per-MSX-pixel alignment.
     //
-    // The declared scaler width in video.json must match: 1196 - DE_TRIM clocks
-    // at half the machine clock = 596 pixels.
+    // Vertical: the V9938's raw window is 242 lines (NTSC) / 293 (PAL), which
+    // forces the Pocket scaler into a non-integer vertical scale on its
+    // 1440-pixel panel (5.95x / 4.91x). Dropping the first 2 lines (NTSC) or
+    // 5 lines (PAL) yields 240 / 288 lines -- an exact 6x / 5x panel fit --
+    // and, because the VDP's top border is 2 lines (NTSC) or 5 lines (PAL)
+    // taller than its bottom border, it also centres the picture exactly in
+    // both the 192-line and 212-line display modes.
+    //
+    // video.json must match: 596 x 240 (NTSC) and 596 x 288 (PAL).
     //--------------------------------------------------------------------------
     localparam DE_TRIM = 4;
 
@@ -381,7 +388,27 @@ module msx2
         end
     end
 
-    assign video_de = vdp_de & (de_cnt == DE_TRIM[2:0]);
+    wire [8:0] v_trim = vdp_pal ? 9'd5 : 9'd2;
+
+    reg  [8:0] de_line_cnt;
+    reg        vdp_de_d, vs_n_d;
+
+    always @(posedge clk) begin
+        vdp_de_d <= vdp_de;
+        vs_n_d   <= vsync_n;
+        if (vs_n_d & ~vsync_n) begin
+            de_line_cnt <= 0;
+        end
+        else if (vdp_de & ~vdp_de_d & ~(&de_line_cnt)) begin
+            de_line_cnt <= de_line_cnt + 1'd1;
+        end
+    end
+
+    // de_line_cnt is 1 on the first window line; it increments at line start,
+    // before the horizontal trim releases any visible pixel of that line.
+    wire v_visible = (de_line_cnt > v_trim);
+
+    assign video_de = vdp_de & (de_cnt == DE_TRIM[2:0]) & v_visible;
 
     //--------------------------------------------------------------------------
     // RP-5C01 RTC
