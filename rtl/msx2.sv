@@ -127,16 +127,23 @@ module msx2
     //--------------------------------------------------------------------------
     // Audio MIX
     //--------------------------------------------------------------------------
-    // The AY PSG mix is unipolar (0..16368 once shifted); on its own it just
-    // fits the old 14-bit compressor window, but adding a cartridge SCC
-    // (+/-9600 typical) drove every loud passage into the hard-clip entries,
-    // audibly destroying Konami SCC music. Sum at 17 bits and halve instead:
-    // worst case |PSG + two carts| < 2^16, so this can never clip.
+    // The AY PSG mix is unipolar (0..16368 once shifted). Cartridge (SCC)
+    // sound is a raw digital sum that the real cartridge runs through an
+    // analog stage at roughly PSG-comparable loudness -- Konami relies on
+    // that and plays Metal Gear 2's melody at SCC volume 1-2 of 15, which
+    // came through ~26dB under the PSG here (verified by replaying the
+    // game's ripped SCC state in sim/tb_scc_mg2.vhd: clean output, +/-700
+    // peak). Boost the cartridge sound x4, sum wide, halve, and saturate;
+    // realistic worst cases stay well inside 16 bits, so the old hard-clip
+    // distortion cannot return.
     wire  [9:0] audioPSG   = ay_ch_mix + {keybeep, 5'b00000} + {(cas_audio_in & ~cas_motor), 4'b0000};
     wire [15:0] fm         = {2'b0, audioPSG, 4'b0000};
-    wire [16:0] audio_mix  = {sound_slots[15], sound_slots} + {fm[15], fm};
+    wire [18:0] audio_mix  = {{3{fm[15]}}, fm} + {sound_slots[15], sound_slots, 2'b00};
+    wire [17:0] audio_half = audio_mix[18:1];
 
-    assign audio = audio_mix[16:1];
+    assign audio = (audio_half[17:15] == 3'b000 ||
+                    audio_half[17:15] == 3'b111) ? audio_half[15:0]
+                                                 : (audio_half[17] ? 16'h8000 : 16'h7FFF);
 
     //--------------------------------------------------------------------------
     // Clock generation
