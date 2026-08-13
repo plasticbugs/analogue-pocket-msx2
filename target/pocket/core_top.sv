@@ -1004,12 +1004,42 @@ module core_top
     );
 
     //! SDRAM
+    //!
+    //! The machine (21.477MHz) and the SDRAM controller (85.909MHz, exactly
+    //! 4x) are integer-related PLL outputs, so the crossing is synchronous
+    //! and timed by the SDC. The cartridge mappers' address arithmetic is
+    //! too deep to settle inside the 11.6ns crossing window, so the whole
+    //! interface is registered at the machine clock in both directions:
+    //! every cross-domain path becomes a logic-free register-to-register
+    //! hop. The two added machine cycles (~93ns) are far inside the Z80's
+    //! memory-cycle budget.
     wire  [7:0] sdram_dout;
     wire  [7:0] sdram_din;
     wire [24:0] sdram_addr;
     wire        sdram_we;
     wire        sdram_rd;
     wire        sdram_ready;
+
+    wire  [7:0] sdram_dout_raw;
+    wire        sdram_ready_raw;
+
+    reg  [7:0] sdram_din_q;
+    reg [24:0] sdram_addr_q;
+    reg        sdram_we_q, sdram_rd_q;
+    reg  [7:0] sdram_dout_q;
+    reg        sdram_ready_q;
+
+    always @(posedge clk_21m) begin
+        sdram_din_q   <= sdram_din;
+        sdram_addr_q  <= sdram_addr;
+        sdram_we_q    <= sdram_we;
+        sdram_rd_q    <= sdram_rd;
+        sdram_dout_q  <= sdram_dout_raw;
+        sdram_ready_q <= sdram_ready_raw;
+    end
+
+    assign sdram_dout  = sdram_dout_q;
+    assign sdram_ready = sdram_ready_q;
 
     sdram sdram
     (
@@ -1028,12 +1058,12 @@ module core_top
         .SDRAM_CKE  ( dram_cke           ),
         .SDRAM_CLK  ( dram_clk           ),
 
-        .dout       ( sdram_dout         ),
-        .din        ( sdram_din          ),
-        .addr       ( sdram_addr         ),
-        .we         ( sdram_we           ),
-        .rd         ( sdram_rd           ),
-        .ready      ( sdram_ready        )
+        .dout       ( sdram_dout_raw     ),
+        .din        ( sdram_din_q        ),
+        .addr       ( sdram_addr_q       ),
+        .we         ( sdram_we_q         ),
+        .rd         ( sdram_rd_q         ),
+        .ready      ( sdram_ready_raw    )
     );
 
     // TODO: Implement Cassette on PSRAM/SRAM instead of DDR
