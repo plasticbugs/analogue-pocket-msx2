@@ -425,7 +425,14 @@ module msx2
     always @* begin
         diag_on  = 1'b0;
         diag_rgb = 24'h000000;
-        if (DIAG_LINES && x_cnt < 11'd280) begin
+        // always-on mapper indicator: 4 squares top-left, bit3..bit0,
+        // bright = 1. Auto->KonamiSCC shows 0100, ASCII8 0101, etc.
+        if (vis_line >= 9'd2 && vis_line < 9'd6 && x_cnt < 11'd128) begin
+            diag_on  = 1'b1;
+            diag_rgb = active_mapper_A[3 - x_cnt[6:5]] ? 24'hFFFF00 : 24'h202020;
+            if (x_cnt[4:0] < 4) diag_rgb = 24'h000000;  // gap between squares
+        end
+        else if (DIAG_LINES && x_cnt < 11'd280) begin
             if (vis_line < 9'd32) begin
                 diag_on = 1'b1;
                 case ({vis_line[4:3], vis_line[0]})
@@ -768,6 +775,7 @@ module msx2
     //--------------------------------------------------------------------------
     wire  [7:0] d_from_slots;
     wire [15:0] sound_slots;
+    wire  [3:0] active_mapper_A;
 
     slots #(.INTERNAL_RAM(0), .USE_FDD(0)) slots
     (
@@ -784,6 +792,7 @@ module msx2
         .d_from_cpu    ( d_from_cpu    ),
         .d_to_cpu      ( d_from_slots  ),
         .sound         ( sound_slots   ),
+        .active_mapper_A ( active_mapper_A ),
         .ioctl_wr      ( ioctl_wr      ),
         .ioctl_addr    ( ioctl_addr    ),
         .ioctl_dout    ( ioctl_dout    ),

@@ -47,6 +47,7 @@ module cart_rom
         output wire        ioctl_wait,
         input  wire  [3:0] user_mapper,
         output wire  [2:0] detected_mapper,
+        output wire  [3:0] active_mapper,
         input  wire  [7:0] ram_dout,
         output wire  [7:0] ram_din,
         output wire [24:0] ram_addr,
@@ -60,6 +61,7 @@ module cart_rom
     assign ram_rd = ~SLTSL_n & ~ioctl_isROM;
     assign ram_we = rom_we;
     assign detected_mapper = auto_mapper;
+    assign active_mapper   = mapper;
 
     assign d_to_cpu = mapper == 4 && scc_ack             ? d_to_cpu_scc   :
                       mapper == 2 && sram_oe_gamemaster2 ? d_to_cpu_sram  :
