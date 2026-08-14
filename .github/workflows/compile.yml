@@ -52,6 +52,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # cut-release.sh publishes the hardware-verified branch build and, in
+          # doing so, creates the tag that triggers this run -- so a release
+          # usually exists already. Keep that artifact; only publish here when
+          # the tag was pushed without one (manual tag-driven release).
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            echo "release ${GITHUB_REF_NAME} already published; skipping"
+            exit 0
+          fi
           cd release/pocket && zip -qr ../../msx2-pocket-sdcard.zip . && cd ../..
           gh release create "${GITHUB_REF_NAME}" \
             --title "MSX2 for Analogue Pocket ${GITHUB_REF_NAME}" \
