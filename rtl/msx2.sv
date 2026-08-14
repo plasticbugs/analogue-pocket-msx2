@@ -114,9 +114,7 @@ module msx2
     wire [15:0] vram_clr_addr = vram_clr_cnt[15:0];
     wire        reset         = reset_i | vram_clearing | verifying;
 
-    // BISECT: wipe disabled to test whether it causes the post-reload
-    // cartridge corruption (v0.2.7 regression candidate)
-    localparam VRAM_WIPE = 0;
+    localparam VRAM_WIPE = 1;
 
     always @(posedge clk) begin
         reset_i_d <= reset_i;
@@ -415,7 +413,8 @@ module msx2
     // reveals exactly which output lines the Pocket scaler displays and which
     // it crops. Set DIAG_LINES = 0 for normal releases.
     //--------------------------------------------------------------------------
-    localparam DIAG_LINES = 0;
+    localparam DIAG_LINES      = 0;
+    localparam DIAG_INDICATORS = 0;
 
     wire [8:0] vis_line  = de_line_cnt - v_trim - 1'd1;
     wire [8:0] last_band = vdp_pal ? 9'd280 : 9'd232;
@@ -434,26 +433,27 @@ module msx2
     always @* begin
         diag_on  = 1'b0;
         diag_rgb = 24'h000000;
-        // always-on cart diagnostics, top-left, bright = 1, MSB first:
+        // cart diagnostics overlay (top-left, bright = 1, MSB first) --
+        // enable via DIAG_INDICATORS when chasing load/data problems:
         //   row 1 (lines 2-5):   active mapper, 4 squares
         //   row 2 (lines 8-11):  ROM stream checksum (8-bit sum), 8 squares
         //   row 3 (lines 14-17): rom_size[20:13], 8 squares
-        if (vis_line >= 9'd2 && vis_line < 9'd6 && x_cnt < 11'd128) begin
+        if (DIAG_INDICATORS && vis_line >= 9'd2 && vis_line < 9'd6 && x_cnt < 11'd128) begin
             diag_on  = 1'b1;
             diag_rgb = active_mapper_A[3 - x_cnt[6:5]] ? 24'hFFFF00 : 24'h202020;
             if (x_cnt[4:0] < 4) diag_rgb = 24'h000000;  // gap between squares
         end
-        else if (vis_line >= 9'd8 && vis_line < 9'd12 && x_cnt < 11'd256) begin
+        else if (DIAG_INDICATORS && vis_line >= 9'd8 && vis_line < 9'd12 && x_cnt < 11'd256) begin
             diag_on  = 1'b1;
             diag_rgb = stream_sum_A[3'd7 - x_cnt[7:5]] ? 24'h00FFFF : 24'h202020;
             if (x_cnt[4:0] < 4) diag_rgb = 24'h000000;
         end
-        else if (vis_line >= 9'd14 && vis_line < 9'd18 && x_cnt < 11'd256) begin
+        else if (DIAG_INDICATORS && vis_line >= 9'd14 && vis_line < 9'd18 && x_cnt < 11'd256) begin
             diag_on  = 1'b1;
             diag_rgb = rom_size_A[5'd20 - x_cnt[7:5]] ? 24'hFF00FF : 24'h202020;
             if (x_cnt[4:0] < 4) diag_rgb = 24'h000000;
         end
-        else if (vis_line >= 9'd20 && vis_line < 9'd24 && x_cnt < 11'd256) begin
+        else if (DIAG_INDICATORS && vis_line >= 9'd20 && vis_line < 9'd24 && x_cnt < 11'd256) begin
             // row 4: SDRAM readback checksum (green) -- must match row 2
             diag_on  = 1'b1;
             diag_rgb = verify_sum[3'd7 - x_cnt[7:5]] ? 24'h00FF00 : 24'h202020;
@@ -824,9 +824,11 @@ module msx2
     reg   [3:0] v_wait;
     reg         v_rd;
 
+    localparam SDRAM_VERIFY = 0;
+
     always @(posedge clk) begin
         v_rd <= 0;
-        if (reset_i_d & ~reset_i && rom_size_A != 0) begin
+        if (SDRAM_VERIFY && reset_i_d & ~reset_i && rom_size_A != 0) begin
             verifying  <= 1;
             v_addr     <= 0;
             verify_sum <= 0;
