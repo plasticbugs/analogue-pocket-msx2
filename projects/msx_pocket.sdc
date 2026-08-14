@@ -23,6 +23,35 @@
 # ==============================================================================
 
 # ==============================================================================
+# SDRAM interface (MT48LC16M16A2)
+#
+# The BSP's set_output_delay lines reference a clock named dram_clk that was
+# never created, so Quartus silently ignored them: the entire SDRAM pin
+# interface -- command/address/data setup at the chip and read-data capture
+# -- was unconstrained and rerolled with every build. That was the
+# nondeterministic cartridge corruption: the download stream checksummed
+# clean while the SDRAM readback differed load to load.
+#
+# The SDRAM_CLK pin is driven by a DDIO cell that inverts the controller
+# clock, so the chip's rising edge sits half a period after ours: create
+# the generated clock (activating the BSP output delays) and constrain the
+# read path. Reads are captured two controller cycles after the command
+# (CAS latency 2), hence the multicycle.
+# ==============================================================================
+create_generated_clock -name dram_clk \
+    -source [get_pins {ic|core_pll|core_pll_inst|altera_pll_i|general[3].gpll~PLL_OUTPUT_COUNTER|divclk}] \
+    -invert [get_ports {dram_clk}]
+
+# tAC(CL2) max 6.0ns, tOH min 2.5ns
+set_input_delay -clock dram_clk -max 6.0 [get_ports {dram_dq[*]}]
+set_input_delay -clock dram_clk -min 2.5 [get_ports {dram_dq[*]}]
+
+set_multicycle_path -setup -end 2 -from [get_clocks {dram_clk}] \
+    -to [get_clocks {ic|core_pll|core_pll_inst|altera_pll_i|general[3].gpll~PLL_OUTPUT_COUNTER|divclk}]
+set_multicycle_path -hold -end 1 -from [get_clocks {dram_clk}] \
+    -to [get_clocks {ic|core_pll|core_pll_inst|altera_pll_i|general[3].gpll~PLL_OUTPUT_COUNTER|divclk}]
+
+# ==============================================================================
 # Set Clock Groups
 # ==============================================================================
 set_clock_groups -asynchronous \
@@ -33,6 +62,7 @@ set_clock_groups -asynchronous \
  -group { ic|core_pll|core_pll_inst|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk \
           ic|core_pll|core_pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk \
           ic|core_pll|core_pll_inst|altera_pll_i|general[3].gpll~PLL_OUTPUT_COUNTER|divclk \
-          ic|core_pll|core_pll_inst|altera_pll_i|general[4].gpll~PLL_OUTPUT_COUNTER|divclk } \
+          ic|core_pll|core_pll_inst|altera_pll_i|general[4].gpll~PLL_OUTPUT_COUNTER|divclk \
+          dram_clk } \
  -group { ic|pocket_audio_mixer|audio_pll|mf_audio_pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk } \
  -group { ic|pocket_audio_mixer|audio_pll|mf_audio_pll_inst|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk }
