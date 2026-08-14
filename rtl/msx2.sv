@@ -114,9 +114,13 @@ module msx2
     wire [15:0] vram_clr_addr = vram_clr_cnt[15:0];
     wire        reset         = reset_i | vram_clearing;
 
+    // BISECT: wipe disabled to test whether it causes the post-reload
+    // cartridge corruption (v0.2.7 regression candidate)
+    localparam VRAM_WIPE = 0;
+
     always @(posedge clk) begin
         reset_i_d <= reset_i;
-        if (reset_i_d & ~reset_i) begin
+        if (VRAM_WIPE && reset_i_d & ~reset_i) begin
             vram_clr_cnt <= 0;
         end
         else if (vram_clearing) begin
@@ -425,12 +429,24 @@ module msx2
     always @* begin
         diag_on  = 1'b0;
         diag_rgb = 24'h000000;
-        // always-on mapper indicator: 4 squares top-left, bit3..bit0,
-        // bright = 1. Auto->KonamiSCC shows 0100, ASCII8 0101, etc.
+        // always-on cart diagnostics, top-left, bright = 1, MSB first:
+        //   row 1 (lines 2-5):   active mapper, 4 squares
+        //   row 2 (lines 8-11):  ROM stream checksum (8-bit sum), 8 squares
+        //   row 3 (lines 14-17): rom_size[20:13], 8 squares
         if (vis_line >= 9'd2 && vis_line < 9'd6 && x_cnt < 11'd128) begin
             diag_on  = 1'b1;
             diag_rgb = active_mapper_A[3 - x_cnt[6:5]] ? 24'hFFFF00 : 24'h202020;
             if (x_cnt[4:0] < 4) diag_rgb = 24'h000000;  // gap between squares
+        end
+        else if (vis_line >= 9'd8 && vis_line < 9'd12 && x_cnt < 11'd256) begin
+            diag_on  = 1'b1;
+            diag_rgb = stream_sum_A[3'd7 - x_cnt[7:5]] ? 24'h00FFFF : 24'h202020;
+            if (x_cnt[4:0] < 4) diag_rgb = 24'h000000;
+        end
+        else if (vis_line >= 9'd14 && vis_line < 9'd18 && x_cnt < 11'd256) begin
+            diag_on  = 1'b1;
+            diag_rgb = rom_size_A[5'd20 - x_cnt[7:5]] ? 24'hFF00FF : 24'h202020;
+            if (x_cnt[4:0] < 4) diag_rgb = 24'h000000;
         end
         else if (DIAG_LINES && x_cnt < 11'd280) begin
             if (vis_line < 9'd32) begin
@@ -776,6 +792,8 @@ module msx2
     wire  [7:0] d_from_slots;
     wire [15:0] sound_slots;
     wire  [3:0] active_mapper_A;
+    wire  [7:0] stream_sum_A;
+    wire [24:0] rom_size_A;
 
     slots #(.INTERNAL_RAM(0), .USE_FDD(0)) slots
     (
@@ -793,6 +811,8 @@ module msx2
         .d_to_cpu      ( d_from_slots  ),
         .sound         ( sound_slots   ),
         .active_mapper_A ( active_mapper_A ),
+        .stream_sum_A  ( stream_sum_A  ),
+        .rom_size_A    ( rom_size_A    ),
         .ioctl_wr      ( ioctl_wr      ),
         .ioctl_addr    ( ioctl_addr    ),
         .ioctl_dout    ( ioctl_dout    ),

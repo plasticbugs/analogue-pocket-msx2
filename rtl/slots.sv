@@ -71,7 +71,9 @@ module slots
         input      [3:0] slot_B,
         input      [1:0] rom_enabled,
         output     [2:0] mapper_info,
-        output     [3:0] active_mapper_A
+        output     [3:0] active_mapper_A,
+        output     [7:0] stream_sum_A,
+        output    [24:0] rom_size_A
     );
 
     parameter USE_SDRAM    = 1;
@@ -167,6 +169,8 @@ module slots
         .user_mapper     ( slot_A            ),
         .detected_mapper ( detected_mapper_A ),
         .active_mapper   ( active_mapper_A   ),
+        .stream_sum      ( stream_sum_A      ),
+        .rom_size_o      ( rom_size_A        ),
         .rom_enabled     ( rom_enabled[0]    )
     );
 
@@ -252,6 +256,8 @@ module slots
         .user_mapper     ( slot_B            ),
         .detected_mapper ( detected_mapper_B ),
         .active_mapper   (                   ),
+        .stream_sum      (                   ),
+        .rom_size_o      (                   ),
         .rom_enabled     ( rom_enabled[1]    )
     );
 

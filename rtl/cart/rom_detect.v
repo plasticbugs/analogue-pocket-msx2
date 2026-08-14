@@ -31,7 +31,8 @@ module rom_detect
         input             rom_we,
         output      [2:0] mapper,
         output      [3:0] offset,
-        output reg [24:0] rom_size
+        output reg [24:0] rom_size,
+        output reg  [7:0] stream_sum
     );
 
     reg               last_isROM;
@@ -61,6 +62,7 @@ module rom_detect
         reg [7:0] a0,a1,a2;
 
         if (ioctl_isROM && ~last_isROM) begin
+            stream_sum <= 0;
             asc16 <= 0;
             asc8  <= 0;
             kon4  <= 0;
@@ -73,6 +75,7 @@ module rom_detect
         end
         if (rom_we_edge) begin
             rom_size <= ioctl_addr + 1'd1 ;
+            stream_sum <= stream_sum + ioctl_dout;
             if (ioctl_addr[24:7] == 0) begin
                 if (ioctl_addr[5:3] == 0) begin
                     if (ioctl_addr[6] == 0) begin

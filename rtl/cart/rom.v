@@ -48,6 +48,8 @@ module cart_rom
         input  wire  [3:0] user_mapper,
         output wire  [2:0] detected_mapper,
         output wire  [3:0] active_mapper,
+        output wire  [7:0] stream_sum,
+        output wire [24:0] rom_size_o,
         input  wire  [7:0] ram_dout,
         output wire  [7:0] ram_din,
         output wire [24:0] ram_addr,
@@ -126,6 +128,8 @@ module cart_rom
     wire [24:0] rom_size;
     wire [2:0]  auto_mapper;
 
+    assign rom_size_o = rom_size;
+
     rom_detect rom_detect
     (
         .clk         ( clk         ),
@@ -135,7 +139,8 @@ module cart_rom
         .rom_we      ( rom_we      ),
         .mapper      ( auto_mapper ),
         .offset      ( offset      ),
-        .rom_size    ( rom_size    )
+        .rom_size    ( rom_size    ),
+        .stream_sum  ( stream_sum  )
     );
 
     wire [24:0] mem_addr_konami;
