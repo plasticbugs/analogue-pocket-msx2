@@ -40,6 +40,7 @@ architecture rtl of keyboard is
     type keyMatrixType is array(8 downto 0) of std_logic_vector(7 downto 0);
     signal keyMatrix : keyMatrixType := (others => (others => '1'));
     signal scancode  : std_logic_vector(7 downto 0);
+    signal extended  : std_logic                    := '0';
     signal changed   : std_logic                    := '0';
     signal release   : std_logic                    := '1';
     signal shift     : std_logic_vector(1 downto 0) := (others => '1');
@@ -54,6 +55,11 @@ begin
             if old_code /= ps2_code_i then
                 release  <= not ps2_code_i(9);
                 scancode <= ps2_code_i(7 downto 0);
+                -- must be registered with the scancode: the joy2key stream
+                -- zeroes its output the cycle after a release strobe, so
+                -- sampling the live bit here loses extended-key releases
+                -- (arrows stuck down after their first use)
+                extended <= ps2_code_i(8);
                 changed  <= '1';
             else
                 changed <= '0';
@@ -66,7 +72,7 @@ begin
     begin
         if clk_i'event and clk_i = '1' then
             if changed = '1' then
-                if ps2_code_i(8) = '0' then
+                if extended = '0' then
                     case scancode is
                         -- 0
                         when x"45" => keyMatrix(0)(0) <= release; -- 0

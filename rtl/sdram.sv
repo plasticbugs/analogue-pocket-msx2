@@ -99,6 +99,7 @@ module sdram
         reg  [7:0] new_data;
         reg        new_we;
         reg        new_rd;
+        reg [24:0] new_waddr;
         reg        save_we = 1'b1;
 
         state_t state = STATE_STARTUP;
@@ -161,14 +162,28 @@ module sdram
                 if(refresh_count > (cycles_per_refresh<<1))
                     state <= STATE_IDLE_1;
                 else if(new_rd | new_we) begin
-                    new_we    <= 0;
-                    new_rd    <= 0;
-                    save_addr <= addr;
-                    save_we   <= new_we;
+                    // Service ONE op and leave the other queued: clearing
+                    // both here silently dropped a read that arrived while
+                    // a write was pending. Writes go first so a following
+                    // read observes the new data. The write must use the
+                    // address captured at its request edge -- CPU writes
+                    // are posted and the bus has long since moved on.
+                    if (new_we) begin
+                        new_we    <= 0;
+                        save_we   <= 1'b1;
+                        save_addr <= new_waddr;
+                        SDRAM_A   <= new_waddr[13:1];
+                        SDRAM_BA  <= new_waddr[24:23];
+                    end
+                    else begin
+                        new_rd    <= 0;
+                        save_we   <= 1'b0;
+                        save_addr <= addr;
+                        SDRAM_A   <= addr[13:1];
+                        SDRAM_BA  <= addr[24:23];
+                    end
                     state     <= STATE_OPEN_1;
                     command   <= CMD_ACTIVE;
-                    SDRAM_A   <= addr[13:1];
-                    SDRAM_BA  <= addr[24:23];
                 end
             end
 
@@ -179,7 +194,10 @@ module sdram
                 if(save_we) begin
                     command  <= CMD_WRITE;
                     SDRAM_DQ <= {new_data[7:0], new_data[7:0]};
-                    ready    <= 1;
+                    // a read that queued behind this write is still owed
+                    // its data: raising ready here released the WAITing
+                    // CPU with the previous read's stale byte
+                    ready    <= ~new_rd;
                     state    <= STATE_IDLE_2;
                 end
                 else begin
@@ -198,6 +216,7 @@ module sdram
         old_we <= we;
         if(we & ~old_we) begin
             {ready, new_we, new_data} <= {1'b0, 1'b1, din};
+            new_waddr <= addr;
         end
 
         old_rd <= rd;
