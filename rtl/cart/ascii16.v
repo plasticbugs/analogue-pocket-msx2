@@ -39,7 +39,9 @@ module cart_asci16
     );
 
     reg  [7:0] bank0, bank1;
-    wire [7:0] mask      = rom_size[20:13] - 1'd1;
+    // mask rounded up to the next power of two (see konami.v)
+    wire [7:0] banks_m1  = rom_size[20:13] - 1'd1;
+    wire [7:0] mask      = banks_m1 | (banks_m1 >> 1) | (banks_m1 >> 2) | (banks_m1 >> 4);
     wire [7:0] sram_mask = rom_size[20:13] > 8'h10 ? rom_size[20:13] : 8'h10;
 
     always @(posedge reset, posedge clk) begin

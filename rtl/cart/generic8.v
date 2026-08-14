@@ -31,7 +31,11 @@ module cart_generic8
     );
 
     reg  [7:0] bank0, bank1, bank2, bank3;
-    wire [7:0] mask = rom_size[20:13] - 1'd1;
+    // Round the mask up to the next power of two: dsk2rom conversions are
+    // not power-of-two sized, and a subtractive mask has holes that corrupt
+    // high bank numbers.
+    wire [7:0] banks_m1 = rom_size[20:13] - 1'd1;
+    wire [7:0] mask     = banks_m1 | (banks_m1 >> 1) | (banks_m1 >> 2) | (banks_m1 >> 4);
 
     always @(posedge reset, posedge clk) begin
         if (reset) begin

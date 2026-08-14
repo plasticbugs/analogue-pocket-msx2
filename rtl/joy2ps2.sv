@@ -31,7 +31,8 @@ module joy2ps2
         input   wire        reset,     // Reset signal
         input   wire        enable,    // Reset signal
         input   wire [23:0] key_map,   // Key Mapping
-        input   wire  [5:0] joy_key,   // [5] Start, [4] Select, [3] R1, [2] L1,  [1] X, [0] Y
+        input   wire  [9:0] joy_key,   // [9] Up, [8] Down, [7] Left, [6] Right,
+                                       // [5] Start, [4] Select, [3] R1, [2] L1, [1] X, [0] Y
         output logic [10:0] ps2_key    // [10] Strobe, [9] Pressed/Released, [8:0] Scancode
     );
 
@@ -147,15 +148,22 @@ module joy2ps2
             ps2_scancode <= 9'h0;
         end
         else begin
-            if(joy_key != 6'h0) begin
+            if(joy_key != 10'h0) begin
                 case(joy_key)
-                    6'h01  : begin ps2_scancode <= MAP_Y;  end // [0] Y
-                    6'h02  : begin ps2_scancode <= MAP_X;  end // [1] X
-                    6'h04  : begin ps2_scancode <= MAP_L;  end // [2] L
-                    6'h08  : begin ps2_scancode <= MAP_R;  end // [3] R
-                    6'h10  : begin ps2_scancode <= MAP_SE; end // [4] Select
-                    6'h20  : begin ps2_scancode <= MAP_ST; end // [5] Start
-                    default: begin /* DO NOTHING */        end
+                    10'h001: begin ps2_scancode <= MAP_Y;    end // [0] Y
+                    10'h002: begin ps2_scancode <= MAP_X;    end // [1] X
+                    10'h004: begin ps2_scancode <= MAP_L;    end // [2] L
+                    10'h008: begin ps2_scancode <= MAP_R;    end // [3] R
+                    10'h010: begin ps2_scancode <= MAP_SE;   end // [4] Select
+                    10'h020: begin ps2_scancode <= MAP_ST;   end // [5] Start
+                    // d-pad always doubles as the cursor keys: keyboard-only
+                    // loaders (SD Snatcher's, Disk BASIC menus) ignore the
+                    // joystick port entirely
+                    10'h040: begin ps2_scancode <= SC_RIGHT; end // [6] Right
+                    10'h080: begin ps2_scancode <= SC_LEFT;  end // [7] Left
+                    10'h100: begin ps2_scancode <= SC_DOWN;  end // [8] Down
+                    10'h200: begin ps2_scancode <= SC_UP;    end // [9] Up
+                    default: begin /* DO NOTHING */          end
                 endcase
             end
             else begin

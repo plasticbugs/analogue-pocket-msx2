@@ -928,7 +928,8 @@ module core_top
     wire  [5:0] joy0    = { p1_btn_b, p1_btn_a, p1_up, p1_down, p1_left, p1_right };
     wire  [5:0] joy1    = { p2_btn_b, p2_btn_a, p2_up, p2_down, p2_left, p2_right };
 
-    wire [10:0] joy_key = { p1_start, p1_select, p1_btn_r1, p1_btn_l1, p1_btn_x, p1_btn_y };
+    wire  [9:0] joy_key = { p1_up, p1_down, p1_left, p1_right,
+                            p1_start, p1_select, p1_btn_r1, p1_btn_l1, p1_btn_x, p1_btn_y };
     wire [23:0] key_map = { mod_sw2, mod_sw1, mod_sw0 };
     wire [10:0] ps2_joy;
 

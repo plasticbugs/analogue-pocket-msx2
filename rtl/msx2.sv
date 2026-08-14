@@ -671,16 +671,17 @@ module msx2
     wire sub_rom_en = sltsl30 & (page == 2'b00);
 
     //--------------------------------------------------------------------------
-    // Slot 3-2: Memory mapper RAM, 64kB (4 segments of 16kB), I/O FC-FF
-    // (64kB is the MSX2 minimum; segments alias above that, as on real
-    // small-mapper machines. Sized to fit the Pocket's block RAM.)
+    // Slot 3-2: Memory mapper RAM, 128kB (8 segments of 16kB), I/O FC-FF
+    // (128kB covers the Konami late-era games that refuse to run on 64kB --
+    // SD Snatcher's loader checks and FAILs explicitly. Block RAM has the
+    // room since the diagnostics-era cuts.)
     //--------------------------------------------------------------------------
     // Only SEG_BITS of each segment register are implemented. The unimplemented
     // bits must read back as 1, because software sizes the mapper by writing a
     // segment number and reading it back: storing all 8 bits would advertise
     // 256 segments (4MB) while only SEG_BITS worth of RAM exists, and every
     // access above that would silently alias onto memory already in use.
-    localparam SEG_BITS = 2; // 4 segments x 16kB = 64kB
+    localparam SEG_BITS = 3; // 8 segments x 16kB = 128kB
 
     reg  [7:0] map_reg[3:0];
     wire [7:0] map_q;

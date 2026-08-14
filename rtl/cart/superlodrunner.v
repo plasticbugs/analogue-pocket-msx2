@@ -30,7 +30,8 @@ module cart_superlodrunner
     );
 
     reg  [7:0] bank;
-    wire [6:0] mask = rom_size[20:14] - 1'd1;
+    wire [6:0] banks_m1 = rom_size[20:14] - 1'd1;
+    wire [6:0] mask     = banks_m1 | (banks_m1 >> 1) | (banks_m1 >> 2) | (banks_m1 >> 4);
 
     // deliberately not qualified with cs: the real cartridge watches the bus
     always @(posedge reset, posedge clk) begin
