@@ -855,7 +855,9 @@ module core_top
     wire       ioctl_isROMB   = ioctl_download && ioctl_index == 16'h1;
     wire       ioctl_isBIOS   = ioctl_download && ioctl_index == 16'h2;
     wire       ioctl_isFWBIOS = ioctl_download && ioctl_index == 16'h3;
-    wire       ioctl_isCAS    = ioctl_download && ioctl_index == 16'h4;
+    wire       ioctl_isCAS     = ioctl_download && ioctl_index == 16'h4;
+    wire       ioctl_isSUBBIOS = ioctl_download && ioctl_index == 16'h5;
+    wire       ioctl_isMAPDB   = ioctl_download && ioctl_index == 16'h6;
 
     always @(posedge clk_21m) begin
         if (svc_sw) begin // Reset & Detach ROM Cartridges
@@ -881,7 +883,7 @@ module core_top
     end
 
     wire mapper_reset = last_mapper != dip_sw0;
-    wire msx_reset = ioctl_isROMA | ioctl_isROMB | ioctl_isBIOS | mapper_reset;
+    wire msx_reset = ioctl_isROMA | ioctl_isROMB | ioctl_isBIOS | ioctl_isSUBBIOS | mapper_reset;
 
     // Synchronize the (clk_74a domain) user reset into the machine domain
     wire reset_sw_s;
@@ -971,6 +973,8 @@ module core_top
         .ioctl_isROMB   ( ioctl_isROMB         ), // [i]
         .ioctl_isBIOS   ( ioctl_isBIOS         ), // [i]
         .ioctl_isFWBIOS ( ioctl_isFWBIOS       ), // [i]
+        .ioctl_isSUBBIOS( ioctl_isSUBBIOS      ), // [i]
+        .ioctl_isMAPDB  ( ioctl_isMAPDB        ), // [i]
         .ioctl_wait     ( ioctl_waitROM        ), // [o]
 
         .cas_motor      ( /* CAS_motor      */ ), // [o]

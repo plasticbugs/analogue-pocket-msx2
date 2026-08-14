@@ -21,6 +21,8 @@ set_global_assignment -name MIF_FILE           [file join $::quartus(qip_path) "
 set_global_assignment -name MIF_FILE           [file join $::quartus(qip_path) "rom/cbios_sub.mif"]
 set_global_assignment -name MIF_FILE           [file join $::quartus(qip_path) "rom/vy0010.mif"]
 
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "sha1.v"]
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "mapper_db.v"]
 set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "cart/rom.v"]
 set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "cart/rom_detect.v"]
 set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "cart/konami.v"]

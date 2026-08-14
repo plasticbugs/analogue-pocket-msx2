@@ -67,6 +67,8 @@ module msx2
         input         ioctl_isROMB,
         input         ioctl_isBIOS,
         input         ioctl_isFWBIOS,
+        input         ioctl_isSUBBIOS,
+        input         ioctl_isMAPDB,
         output        ioctl_wait,
         // Cassette
         output        cas_motor,
@@ -112,7 +114,7 @@ module msx2
 
     wire        vram_clearing = ~vram_clr_cnt[16];
     wire [15:0] vram_clr_addr = vram_clr_cnt[15:0];
-    wire        reset         = reset_i | vram_clearing | verifying;
+    wire        reset         = reset_i | vram_clearing | verifying | db_scanning;
 
     localparam VRAM_WIPE = 1;
 
@@ -312,11 +314,11 @@ module msx2
 
     spram #(.addr_width(14), .mem_init_file("rom/cbios_sub.mif"), .mem_name("SUBROM")) sub_rom
     (
-        .clock   ( clk       ),
-        .address ( a[13:0]   ),
-        .q       ( sub_rom_q ),
-        .wren    ( 0         ),
-        .data    ( 8'h0      )
+        .clock   ( clk             ),
+        .address ( ioctl_isSUBBIOS ? ioctl_addr[13:0] : a[13:0] ),
+        .q       ( sub_rom_q       ),
+        .wren    ( ioctl_isSUBBIOS ),
+        .data    ( ioctl_dout      )
     );
 
     //--------------------------------------------------------------------------
@@ -808,6 +810,12 @@ module msx2
     wire  [7:0] slots_sdram_din;
     wire [24:0] slots_sdram_addr;
     wire        slots_sdram_we, slots_sdram_rd;
+    wire        slots_ioctl_wait;
+
+    // stall the bridge while the hash engine compresses a block and pace
+    // the database download by SDRAM readiness, like cart downloads
+    assign ioctl_wait = slots_ioctl_wait | sha1_busy
+                      | (ioctl_isMAPDB & ~sdram_ready);
 
     //--------------------------------------------------------------------------
     // SDRAM readback verifier (diagnostic)
@@ -857,10 +865,46 @@ module msx2
         end
     end
 
-    assign sdram_addr = verifying ? {3'b001, v_addr[21:0]} : slots_sdram_addr;
+    //--------------------------------------------------------------------------
+    // Mapper database autodetect (see rtl/mapper_db.v). The machine is held
+    // in reset while a lookup scans SDRAM, like the VRAM wipe.
+    //--------------------------------------------------------------------------
+    wire        db_scanning, sha1_busy, db_rd;
+    wire [24:0] db_addr;
+    wire  [3:0] db_mapper_A, db_mapper_B;
+    wire        db_valid_A, db_valid_B;
+
+    mapper_db mapper_db
+    (
+        .clk           ( clk           ),
+        .ioctl_wr      ( ioctl_wr      ),
+        .ioctl_addr    ( ioctl_addr    ),
+        .ioctl_dout    ( ioctl_dout    ),
+        .ioctl_isROMA  ( ioctl_isROMA  ),
+        .ioctl_isROMB  ( ioctl_isROMB  ),
+        .ioctl_isMAPDB ( ioctl_isMAPDB ),
+        .stall         ( sha1_busy     ),
+        .scanning      ( db_scanning   ),
+        .db_addr       ( db_addr       ),
+        .db_rd         ( db_rd         ),
+        .sdram_dout    ( sdram_dout    ),
+        .sdram_ready   ( sdram_ready   ),
+        .db_mapper_A   ( db_mapper_A   ),
+        .db_valid_A    ( db_valid_A    ),
+        .db_mapper_B   ( db_mapper_B   ),
+        .db_valid_B    ( db_valid_B    )
+    );
+
+    assign sdram_addr = verifying      ? {3'b001, v_addr[21:0]}     :
+                        ioctl_isMAPDB  ? {3'b010, ioctl_addr[21:0]} :
+                        db_scanning    ? {3'b010, db_addr[21:0]}    :
+                                         slots_sdram_addr;
     assign sdram_din  = slots_sdram_din;
-    assign sdram_we   = verifying ? 1'b0 : slots_sdram_we;
-    assign sdram_rd   = verifying ? v_rd : slots_sdram_rd;
+    assign sdram_we   = ioctl_isMAPDB ? ioctl_wr :
+                        (verifying | db_scanning) ? 1'b0 : slots_sdram_we;
+    assign sdram_rd   = verifying   ? v_rd  :
+                        db_scanning ? db_rd :
+                        ioctl_isMAPDB ? 1'b0 : slots_sdram_rd;
 
     slots #(.INTERNAL_RAM(0), .USE_FDD(0)) slots
     (
@@ -885,7 +929,7 @@ module msx2
         .ioctl_dout    ( ioctl_dout    ),
         .ioctl_isROMA  ( ioctl_isROMA  ),
         .ioctl_isROMB  ( ioctl_isROMB  ),
-        .ioctl_wait    ( ioctl_wait    ),
+        .ioctl_wait    ( slots_ioctl_wait ),
         .sdram_dout    ( sdram_dout      ),
         .sdram_din     ( slots_sdram_din ),
         .sdram_addr    ( slots_sdram_addr),
@@ -895,6 +939,10 @@ module msx2
         .sdram_size    ( sdram_size    ),
         .slot_A        ( slot_A        ),
         .slot_B        ( slot_B        ),
+        .db_mapper_A   ( db_mapper_A   ),
+        .db_valid_A    ( db_valid_A    ),
+        .db_mapper_B   ( db_mapper_B   ),
+        .db_valid_B    ( db_valid_B    ),
         .mapper_info   ( mapper_info   ),
         .rom_enabled   ( rom_enabled   ),
         .img_mounted   ( img_mounted   ),

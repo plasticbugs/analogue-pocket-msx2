@@ -46,6 +46,8 @@ module cart_rom
         input  wire        ioctl_isROM,
         output wire        ioctl_wait,
         input  wire  [3:0] user_mapper,
+        input  wire  [3:0] db_mapper,
+        input  wire        db_valid,
         output wire  [3:0] detected_mapper,
         output wire  [3:0] active_mapper,
         output wire  [7:0] stream_sum,
@@ -62,7 +64,7 @@ module cart_rom
     assign ram_din = ioctl_dout;
     assign ram_rd = ~SLTSL_n & ~ioctl_isROM;
     assign ram_we = rom_we;
-    assign detected_mapper = auto_mapper;
+    assign detected_mapper = db_valid ? db_mapper : auto_mapper;
     assign active_mapper   = mapper;
 
     assign d_to_cpu = mapper == 4  && scc_ack             ? d_to_cpu_scc   :
@@ -110,7 +112,10 @@ module cart_rom
     // 12 Harry Fox
     // 13 Super Lode Runner
 
-    assign mapper   = user_mapper == 0 ? auto_mapper : user_mapper;
+    // priority: manual menu pick, then database hit, then heuristic
+    assign mapper   = user_mapper != 0 ? user_mapper :
+                      db_valid         ? db_mapper   :
+                                         auto_mapper ;
     assign ram_addr = ioctl_isROM  ? ioctl_addr            :
                       mapper == 2  ? mem_addr_gamemaster2  :
                       mapper == 3  ? mem_addr_konami       :
