@@ -56,9 +56,12 @@
                 "id": 6,
                 "name": "Mapper DB",
                 "required": false,
-                "parameters": "0x0",
+                "parameters": "0x8",
                 "filename": "mapperdb.bin",
-                "address": "0x00000000"
+                "address": "0x00000000",
+                "extensions": [
+                    "bin"
+                ]
             }
         ]
     }
