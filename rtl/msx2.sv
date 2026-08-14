@@ -112,7 +112,7 @@ module msx2
 
     wire        vram_clearing = ~vram_clr_cnt[16];
     wire [15:0] vram_clr_addr = vram_clr_cnt[15:0];
-    wire        reset         = reset_i | vram_clearing;
+    wire        reset         = reset_i | vram_clearing | verifying;
 
     // BISECT: wipe disabled to test whether it causes the post-reload
     // cartridge corruption (v0.2.7 regression candidate)
@@ -170,13 +170,18 @@ module msx2
     wire  [7:0] d_to_cpu, d_from_cpu;
     wire        mreq_n, wr_n, m1_n, iorq_n, rd_n, rfrsh_n, wait_n;
 
+    // WAIT while a cartridge SDRAM read is outstanding (ready is registered
+    // and drops a few clocks after the request; the T80 samples WAIT late
+    // enough in T2 to see it)
+    wire sdram_wait_n = ~(slots_sdram_rd & ~sdram_ready);
+
     t80pa #(.Mode(0)) u_t80
     (
         .RESET_n ( ~reset        ),
         .CLK     ( clk           ),
         .CEN_p   ( clk_en_3m58_p ),
         .CEN_n   ( clk_en_3m58_n ),
-        .WAIT_n  ( wait_n        ),
+        .WAIT_n  ( wait_n & sdram_wait_n ),
         .INT_n   ( vdp_int_n     ),
         .NMI_n   ( 1             ),
         .BUSRQ_n ( 1             ),
@@ -446,6 +451,12 @@ module msx2
         else if (vis_line >= 9'd14 && vis_line < 9'd18 && x_cnt < 11'd256) begin
             diag_on  = 1'b1;
             diag_rgb = rom_size_A[5'd20 - x_cnt[7:5]] ? 24'hFF00FF : 24'h202020;
+            if (x_cnt[4:0] < 4) diag_rgb = 24'h000000;
+        end
+        else if (vis_line >= 9'd20 && vis_line < 9'd24 && x_cnt < 11'd256) begin
+            // row 4: SDRAM readback checksum (green) -- must match row 2
+            diag_on  = 1'b1;
+            diag_rgb = verify_sum[3'd7 - x_cnt[7:5]] ? 24'h00FF00 : 24'h202020;
             if (x_cnt[4:0] < 4) diag_rgb = 24'h000000;
         end
         else if (DIAG_LINES && x_cnt < 11'd280) begin
@@ -794,6 +805,60 @@ module msx2
     wire  [3:0] active_mapper_A;
     wire  [7:0] stream_sum_A;
     wire [24:0] rom_size_A;
+    wire  [7:0] slots_sdram_din;
+    wire [24:0] slots_sdram_addr;
+    wire        slots_sdram_we, slots_sdram_rd;
+
+    //--------------------------------------------------------------------------
+    // SDRAM readback verifier (diagnostic)
+    //
+    // After every reset release, re-read the slot A ROM image out of SDRAM
+    // and sum it, holding the machine in reset meanwhile. Compared against
+    // the download-stream checksum this splits 'the bytes never arrived'
+    // from 'SDRAM lost them' without a logic analyser.
+    //--------------------------------------------------------------------------
+    reg  [24:0] v_addr;
+    reg   [7:0] verify_sum;
+    reg         verifying;
+    reg   [2:0] v_state;
+    reg   [3:0] v_wait;
+    reg         v_rd;
+
+    always @(posedge clk) begin
+        v_rd <= 0;
+        if (reset_i_d & ~reset_i && rom_size_A != 0) begin
+            verifying  <= 1;
+            v_addr     <= 0;
+            verify_sum <= 0;
+            v_state    <= 0;
+        end
+        else if (verifying) begin
+            case (v_state)
+                3'd0: begin v_rd <= 1; v_state <= 3'd1; v_wait <= 0; end
+                3'd1: begin
+                    // let the registered ready fall, then wait for data
+                    v_wait <= v_wait + 1'd1;
+                    if (v_wait == 4'd5) v_state <= 3'd2;
+                end
+                3'd2: if (sdram_ready) begin
+                    verify_sum <= verify_sum + sdram_dout;
+                    if (v_addr == rom_size_A - 1'd1) begin
+                        verifying <= 0;
+                    end
+                    else begin
+                        v_addr  <= v_addr + 1'd1;
+                        v_state <= 3'd0;
+                    end
+                end
+                default: v_state <= 3'd0;
+            endcase
+        end
+    end
+
+    assign sdram_addr = verifying ? {3'b001, v_addr[21:0]} : slots_sdram_addr;
+    assign sdram_din  = slots_sdram_din;
+    assign sdram_we   = verifying ? 1'b0 : slots_sdram_we;
+    assign sdram_rd   = verifying ? v_rd : slots_sdram_rd;
 
     slots #(.INTERNAL_RAM(0), .USE_FDD(0)) slots
     (
@@ -819,12 +884,12 @@ module msx2
         .ioctl_isROMA  ( ioctl_isROMA  ),
         .ioctl_isROMB  ( ioctl_isROMB  ),
         .ioctl_wait    ( ioctl_wait    ),
-        .sdram_dout    ( sdram_dout    ),
-        .sdram_din     ( sdram_din     ),
-        .sdram_addr    ( sdram_addr    ),
-        .sdram_we      ( sdram_we      ),
-        .sdram_rd      ( sdram_rd      ),
-        .sdram_ready   ( sdram_ready   ),
+        .sdram_dout    ( sdram_dout      ),
+        .sdram_din     ( slots_sdram_din ),
+        .sdram_addr    ( slots_sdram_addr),
+        .sdram_we      ( slots_sdram_we  ),
+        .sdram_rd      ( slots_sdram_rd  ),
+        .sdram_ready   ( sdram_ready     ),
         .sdram_size    ( sdram_size    ),
         .slot_A        ( slot_A        ),
         .slot_B        ( slot_B        ),
