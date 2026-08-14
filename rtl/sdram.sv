@@ -94,7 +94,7 @@ module sdram
 
     always @(posedge clk) begin
         reg old_we, old_rd;
-        reg [CAS_LATENCY:0] data_ready_delay;
+        reg [CAS_LATENCY+1:0] data_ready_delay;
 
         reg  [7:0] new_data;
         reg        new_we;
@@ -107,7 +107,7 @@ module sdram
         command  <= CMD_NOP;
         refresh_count  <= refresh_count+1'b1;
 
-        data_ready_delay <= {1'b0, data_ready_delay[CAS_LATENCY:1]};
+        data_ready_delay <= {1'b0, data_ready_delay[CAS_LATENCY+1:1]};
 
         if(data_ready_delay[0])
             {ready, data}  <= {1'b1, SDRAM_DQ};
@@ -184,7 +184,7 @@ module sdram
                 end
                 else begin
                     command                       <= CMD_READ;
-                    data_ready_delay[CAS_LATENCY] <= 1;
+                    data_ready_delay[CAS_LATENCY+1] <= 1;
                     state                         <= STATE_IDLE_5;
                 end
             end
@@ -221,8 +221,8 @@ module sdram
         .power_up_high          ( "OFF"          ),
         .width                  ( 1              )
     ) sdramclk_ddr (
-        .datain_h               ( 1'b0           ),
-        .datain_l               ( 1'b1           ),
+        .datain_h               ( 1'b1           ),
+        .datain_l               ( 1'b0           ),
         .outclock               ( clk            ),
         .dataout                ( SDRAM_CLK      ),
         .aclr                   ( 1'b0           ),
