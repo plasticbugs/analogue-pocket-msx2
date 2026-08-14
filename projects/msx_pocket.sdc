@@ -39,7 +39,7 @@
 # and deterministic, and the CL2 read capture is a two-cycle transfer.
 # ==============================================================================
 create_generated_clock -name dram_clk \
-    -source [get_pins {ic|core_pll|core_pll_inst|altera_pll_i|general[3].gpll~PLL_OUTPUT_COUNTER|divclk}] \
+    -source [get_pins {ic|core_pll|core_pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] \
     -invert [get_ports {dram_clk}]
 
 # The BSP's identical output delays run BEFORE this file creates dram_clk
@@ -55,9 +55,9 @@ set_input_delay -clock dram_clk -min 2.5 [get_ports {dram_dq[*]}]
 # CL2: the controller captures read data two of its cycles after the chip's
 # launch edge
 set_multicycle_path -setup -end 2 -from [get_clocks {dram_clk}] \
-    -to [get_clocks {ic|core_pll|core_pll_inst|altera_pll_i|general[3].gpll~PLL_OUTPUT_COUNTER|divclk}]
+    -to [get_clocks {ic|core_pll|core_pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}]
 set_multicycle_path -hold -end 1 -from [get_clocks {dram_clk}] \
-    -to [get_clocks {ic|core_pll|core_pll_inst|altera_pll_i|general[3].gpll~PLL_OUTPUT_COUNTER|divclk}]
+    -to [get_clocks {ic|core_pll|core_pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}]
 
 # ==============================================================================
 # Set Clock Groups
@@ -66,8 +66,8 @@ set_clock_groups -asynchronous \
  -group { bridge_spiclk } \
  -group { clk_74a } \
  -group { clk_74b } \
- -group { ic|core_pll|core_pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk } \
- -group { ic|core_pll|core_pll_inst|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk \
+ -group { ic|core_pll|core_pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk \
+          ic|core_pll|core_pll_inst|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk \
           ic|core_pll|core_pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk \
           ic|core_pll|core_pll_inst|altera_pll_i|general[3].gpll~PLL_OUTPUT_COUNTER|divclk \
           ic|core_pll|core_pll_inst|altera_pll_i|general[4].gpll~PLL_OUTPUT_COUNTER|divclk \

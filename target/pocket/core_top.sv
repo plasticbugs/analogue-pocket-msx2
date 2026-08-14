@@ -1041,10 +1041,16 @@ module core_top
     assign sdram_dout  = sdram_dout_q;
     assign sdram_ready = sdram_ready_q;
 
+    // The controller runs at 42.95MHz (exactly 2x the machine clock): the
+    // cartridge is paced by a 3.58MHz CPU with wait-states and downloads by
+    // the bridge, so nothing needs 86MHz -- and at half speed every SDRAM
+    // pin path gains ~12ns of slack, far beyond temperature/process drift.
+    // The interface proved marginal at 85.9MHz: reads verified clean on a
+    // cold device and corrupted as it warmed.
     sdram sdram
     (
         .init       ( ~pll_core_locked_s ),
-        .clk        ( clk_ram            ),
+        .clk        ( clk_sys            ),
 
         .SDRAM_DQ   ( dram_dq            ),
         .SDRAM_A    ( dram_a             ),
