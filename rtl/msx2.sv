@@ -75,7 +75,7 @@ module msx2
         input   [1:0] rom_enabled,
         input   [3:0] slot_A,
         input   [3:0] slot_B,
-        output  [2:0] mapper_info,
+        output  [3:0] mapper_info,
         // SDRAM
         input   [7:0] sdram_dout,
         output  [7:0] sdram_din,

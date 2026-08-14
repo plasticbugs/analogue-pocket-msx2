@@ -46,7 +46,7 @@ module cart_rom
         input  wire        ioctl_isROM,
         output wire        ioctl_wait,
         input  wire  [3:0] user_mapper,
-        output wire  [2:0] detected_mapper,
+        output wire  [3:0] detected_mapper,
         output wire  [3:0] active_mapper,
         output wire  [7:0] stream_sum,
         output wire [24:0] rom_size_o,
@@ -65,12 +65,15 @@ module cart_rom
     assign detected_mapper = auto_mapper;
     assign active_mapper   = mapper;
 
-    assign d_to_cpu = mapper == 4 && scc_ack             ? d_to_cpu_scc   :
-                      mapper == 2 && sram_oe_gamemaster2 ? d_to_cpu_sram  :
-                      mapper == 6 && sram_oe_ascii16     ? d_to_cpu_sram  :
-                      mapper == 5 && sram_oe_ascii8      ? d_to_cpu_sram  :
-                      ~rom_enabled                       ? 8'hFF          :
-                                                           ram_dout       ;
+    assign d_to_cpu = mapper == 4  && scc_ack             ? d_to_cpu_scc   :
+                      mapper == 2  && sram_oe_gamemaster2 ? d_to_cpu_sram  :
+                      mapper == 6  && sram_oe_ascii16     ? d_to_cpu_sram  :
+                      mapper == 5  && sram_oe_ascii8      ? d_to_cpu_sram  :
+                      mapper == 11 && nomap_crossblaim    ? 8'hFF          :
+                      mapper == 12 && nomap_harryfox      ? 8'hFF          :
+                      mapper == 13 && nomap_slodrunner    ? 8'hFF          :
+                      ~rom_enabled                        ? 8'hFF          :
+                                                            ram_dout       ;
 
     assign sound = mapper == 4 ? scc_sound : 14'h0;
 
@@ -92,27 +95,35 @@ module cart_rom
 
     wire [3:0] mapper;
 
-    // 0 uknown
-    // 1 nomaper
-    // 2 gamemaster2
-    // 3 konami
-    // 4 konami SCC
-    // 5 ASCII 8
-    // 6 ASCII 16
-    // 7 linear (nomaper) 64kb. Aligned ROM image is replicated to 64KB area.
-    // 8 R-TYPE
-    // 9 FDD VY0010
+    // 0  uknown
+    // 1  nomaper
+    // 2  gamemaster2
+    // 3  konami
+    // 4  konami SCC
+    // 5  ASCII 8
+    // 6  ASCII 16
+    // 7  linear (nomaper) 64kb. Aligned ROM image is replicated to 64KB area.
+    // 8  R-TYPE
+    // 9  FDD VY0010
+    // 10 generic 8k (openMSX GENERIC_8KB / "GenericKonami")
+    // 11 Cross Blaim
+    // 12 Harry Fox
+    // 13 Super Lode Runner
 
-    assign mapper   = user_mapper[3:0] == 0 ? {1'b0,auto_mapper} : user_mapper[3:0];
-    assign ram_addr = ioctl_isROM ? ioctl_addr            :
-                      mapper == 2 ? mem_addr_gamemaster2  :
-                      mapper == 3 ? mem_addr_konami       :
-                      mapper == 4 ? mem_addr_konami_scc   :
-                      mapper == 5 ? mem_addr_ascii8       :
-                      mapper == 6 ? mem_addr_ascii16      :
-                      mapper == 8 ? mem_addr_ascii16      :
-                      mapper == 7 ? addr & (rom_size - 1) :
-                                    addr - {offset,12'd0} ; // default nomaper
+    assign mapper   = user_mapper == 0 ? auto_mapper : user_mapper;
+    assign ram_addr = ioctl_isROM  ? ioctl_addr            :
+                      mapper == 2  ? mem_addr_gamemaster2  :
+                      mapper == 3  ? mem_addr_konami       :
+                      mapper == 4  ? mem_addr_konami_scc   :
+                      mapper == 5  ? mem_addr_ascii8       :
+                      mapper == 6  ? mem_addr_ascii16      :
+                      mapper == 8  ? mem_addr_ascii16      :
+                      mapper == 10 ? mem_addr_generic8     :
+                      mapper == 11 ? mem_addr_crossblaim   :
+                      mapper == 12 ? mem_addr_harryfox     :
+                      mapper == 13 ? mem_addr_slodrunner   :
+                      mapper == 7  ? addr & (rom_size - 1) :
+                                     addr - {offset,12'd0} ; // default nomaper
 
     assign sram_addr = mapper == 2 ? sram_addr_gamemaster2 :
                        mapper == 6 ? sram_addr_ascii16     :
@@ -126,7 +137,7 @@ module cart_rom
 
     wire [3:0]  offset;
     wire [24:0] rom_size;
-    wire [2:0]  auto_mapper;
+    wire [3:0]  auto_mapper;
 
     assign rom_size_o = rom_size;
 
@@ -218,6 +229,65 @@ module cart_rom
         .sram_addr  ( sram_addr_ascii16 ),
         .sram_we    ( sram_we_ascii16   ),
         .sram_oe    ( sram_oe_ascii16   )
+    );
+
+    wire [24:0] mem_addr_generic8;
+
+    cart_generic8 generic8
+    (
+        .clk        ( clk               ),
+        .reset      ( reset             ),
+        .rom_size   ( rom_size          ),
+        .addr       ( addr              ),
+        .d_from_cpu ( d_from_cpu        ),
+        .wr         ( wr                ),
+        .cs         ( ~SLTSL_n          ),
+        .mem_addr   ( mem_addr_generic8 )
+    );
+
+    wire [24:0] mem_addr_crossblaim;
+    wire        nomap_crossblaim;
+
+    cart_crossblaim crossblaim
+    (
+        .clk        ( clk                 ),
+        .reset      ( reset               ),
+        .addr       ( addr                ),
+        .d_from_cpu ( d_from_cpu          ),
+        .wr         ( wr                  ),
+        .cs         ( ~SLTSL_n            ),
+        .mem_addr   ( mem_addr_crossblaim ),
+        .nomap      ( nomap_crossblaim    )
+    );
+
+    wire [24:0] mem_addr_harryfox;
+    wire        nomap_harryfox;
+
+    cart_harryfox harryfox
+    (
+        .clk        ( clk               ),
+        .reset      ( reset             ),
+        .addr       ( addr              ),
+        .d_from_cpu ( d_from_cpu        ),
+        .wr         ( wr                ),
+        .cs         ( ~SLTSL_n          ),
+        .mem_addr   ( mem_addr_harryfox ),
+        .nomap      ( nomap_harryfox    )
+    );
+
+    wire [24:0] mem_addr_slodrunner;
+    wire        nomap_slodrunner;
+
+    cart_superlodrunner slodrunner
+    (
+        .clk        ( clk                 ),
+        .reset      ( reset               ),
+        .rom_size   ( rom_size            ),
+        .addr       ( addr                ),
+        .d_from_cpu ( d_from_cpu          ),
+        .wr         ( wr                  ),
+        .mem_addr   ( mem_addr_slodrunner ),
+        .nomap      ( nomap_slodrunner    )
     );
 
     wire [24:0] mem_addr_gamemaster2;

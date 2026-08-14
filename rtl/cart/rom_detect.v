@@ -29,7 +29,7 @@ module rom_detect
         input      [24:0] ioctl_addr,
         input       [7:0] ioctl_dout,
         input             rom_we,
-        output      [2:0] mapper,
+        output      [3:0] mapper,
         output      [3:0] offset,
         output reg [24:0] rom_size,
         output reg  [7:0] stream_sum
@@ -120,25 +120,28 @@ module rom_detect
         end
     end
 
-    // 0 uknown
-    // 1 nomaper
-    // 2 gamemaster2
-    // 3 konami
-    // 4 konami SCC
-    // 5 ASCII 8
-    // 6 ASCII 16
+    // 0  uknown
+    // 1  nomaper
+    // 2  gamemaster2
+    // 3  konami
+    // 4  konami SCC
+    // 5  ASCII 8
+    // 6  ASCII 16
+    // 10 generic 8k
 
     wire [15:0] kon    = kon4 > kon5  ? kon4 : kon5;
     wire [15:0] ascii  = asc8 > asc16 ? asc8 : asc16;
 
-    // With no bank-switch signatures at all, default to ASCII8 -- the same
-    // choice as openMSX's guesser (GENERIC_8KB).
-    assign      mapper = rom_size                   < 25'h2000  ? 3'd0 :
-                         rom_size                   < 25'h10000 ? 3'd1 :
-                         rom_size && game1 && game2 > 25'h18000 ? 3'd2 :
-                         kon > ascii                            ? (kon5 > kon4  ? 3'd4 : 3'd3) :
-                         (ascii == 0)                           ? 3'd5 :
-                                                                  (asc8 > asc16 ? 3'd5 : 3'd6) ;
+    // With no bank-switch signatures at all, fall back to the generic 8k
+    // mapper -- the same choice as openMSX's guesser (GENERIC_8KB), which
+    // switches on writes to the page itself rather than ASCII8's 6000-7fffh
+    // window, so it also boots Konami-style pirate boards ("GenericKonami").
+    assign      mapper = rom_size            < 25'h2000  ? 4'd0 :
+                         rom_size            < 25'h10000 ? 4'd1 :
+                         rom_size > 25'h18000 && game1 && game2 ? 4'd2 :
+                         kon > ascii                            ? (kon5 > kon4  ? 4'd4 : 4'd3) :
+                         (ascii == 0)                           ? 4'd10 :
+                                                                  (asc8 > asc16 ? 4'd5 : 4'd6) ;
 
     wire [15:0] start          = head[3]  << 8 | head[2];
     wire [15:0] start4000      = head2[3] << 8 | head2[2];

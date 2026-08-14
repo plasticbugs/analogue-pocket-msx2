@@ -547,7 +547,7 @@ module core_top
             32'hF8xxxxxx: begin bridge_rd_data <= cmd_bridge_rd_data;   end // APF Bridge (Reserved)
             32'hFA000000: begin bridge_rd_data <= int_bridge_rd_data;   end // Status Low  [31:0]
             32'hFB000000: begin bridge_rd_data <= int_bridge_rd_data;   end // Status High [63:32]
-            32'hFE000000: begin bridge_rd_data <= {29'h0, mapper_info}; end
+            32'hFE000000: begin bridge_rd_data <= {28'h0, mapper_info}; end
             default:      begin bridge_rd_data <= 0;                    end
         endcase
     end
@@ -890,7 +890,7 @@ module core_top
     //! CORE
     wire        hsync_n, vsync_n, msx_video_de;
     wire        ioctl_waitROM;
-    wire  [2:0] mapper_info;
+    wire  [3:0] mapper_info;
 
     reg hs_o, vs_o;
     always @(posedge clk_21m) begin

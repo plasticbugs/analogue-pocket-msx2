@@ -70,7 +70,7 @@ module slots
         input      [3:0] slot_A,
         input      [3:0] slot_B,
         input      [1:0] rom_enabled,
-        output     [2:0] mapper_info,
+        output     [3:0] mapper_info,
         output     [3:0] active_mapper_A,
         output     [7:0] stream_sum_A,
         output    [24:0] rom_size_A
@@ -120,8 +120,8 @@ module slots
         if (ioctl_isROMB) last_loadRom <= 1;
     end
 
-    assign mapper_info = last_loadRom ? rom_enabled[1] ? detected_mapper_B : 3'h0 :
-                                        rom_enabled[0] ? detected_mapper_A : 3'h0 ;
+    assign mapper_info = last_loadRom ? rom_enabled[1] ? detected_mapper_B : 4'h0 :
+                                        rom_enabled[0] ? detected_mapper_A : 4'h0 ;
 
     // SLOT A
     wire enableFDD_n = (USE_FDD == 0) ? 1'b1 :
@@ -138,7 +138,7 @@ module slots
     wire        ram_we_A;
     wire        ram_rd_A;
     wire        ram_ready_A;
-    wire  [2:0] detected_mapper_A;
+    wire  [3:0] detected_mapper_A;
 
     cart_rom ROM_slot_A
     (
@@ -225,7 +225,7 @@ module slots
     wire        ram_we_B;
     wire        ram_rd_B;
     wire        ram_ready_B;
-    wire  [2:0] detected_mapper_B;
+    wire  [3:0] detected_mapper_B;
 
     cart_rom ROM_slot_B
     (

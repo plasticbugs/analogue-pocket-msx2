@@ -30,6 +30,10 @@ set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) "
 set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "cart/ascii8.v"]
 set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "cart/ascii16.v"]
 set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "cart/gamemaster2.v"]
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "cart/generic8.v"]
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "cart/crossblaim.v"]
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "cart/harryfox.v"]
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "cart/superlodrunner.v"]
 set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "cart/vy0010.v"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "cart/wd1793.sv"]
 
