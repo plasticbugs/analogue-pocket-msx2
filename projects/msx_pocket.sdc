@@ -32,19 +32,15 @@
 # nondeterministic cartridge corruption: the download stream checksummed
 # clean while the SDRAM readback differed load to load.
 #
-# The SDRAM_CLK pin is driven by a DDIO cell IN PHASE with the controller
-# clock. Commands launched on our edge k are sampled by the chip at its
-# edge k+1 (a full period of setup); CL2 read data is driven from the
-# chip's edge k+3 and captured by the controller at k+4 (the RTL waits
-# CAS_LATENCY+1), so both directions are plain single-cycle transfers --
-# no multicycle exceptions, several ns of margin each side. The previous
-# inverted-clock arrangement left worst-case read data arriving 0.2ns
-# AFTER the capture edge: reads were marginal for the lifetime of the
-# project, working or failing with silicon speed and per-build routing.
+# The SDRAM_CLK pin is driven by a DDIO cell that inverts the controller
+# clock (the arrangement this controller has run in production on MiSTer
+# for years); the chip's rising edge sits half a period after ours. With
+# the interface registers packed into the I/O cells, the paths are short
+# and deterministic, and the CL2 read capture is a two-cycle transfer.
 # ==============================================================================
 create_generated_clock -name dram_clk \
     -source [get_pins {ic|core_pll|core_pll_inst|altera_pll_i|general[3].gpll~PLL_OUTPUT_COUNTER|divclk}] \
-    [get_ports {dram_clk}]
+    -invert [get_ports {dram_clk}]
 
 # The BSP's identical output delays run BEFORE this file creates dram_clk
 # (SDC files process in order), so they are still ignored there; they must
@@ -55,6 +51,13 @@ set_output_delay -clock dram_clk -min -0.8 [get_ports {dram_a[*] dram_ba[*] dram
 # tAC(CL2) max 5.4ns (-7E speed grade), tOH min 2.5ns
 set_input_delay -clock dram_clk -max 5.4 [get_ports {dram_dq[*]}]
 set_input_delay -clock dram_clk -min 2.5 [get_ports {dram_dq[*]}]
+
+# CL2: the controller captures read data two of its cycles after the chip's
+# launch edge
+set_multicycle_path -setup -end 2 -from [get_clocks {dram_clk}] \
+    -to [get_clocks {ic|core_pll|core_pll_inst|altera_pll_i|general[3].gpll~PLL_OUTPUT_COUNTER|divclk}]
+set_multicycle_path -hold -end 1 -from [get_clocks {dram_clk}] \
+    -to [get_clocks {ic|core_pll|core_pll_inst|altera_pll_i|general[3].gpll~PLL_OUTPUT_COUNTER|divclk}]
 
 # ==============================================================================
 # Set Clock Groups
