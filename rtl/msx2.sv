@@ -170,10 +170,12 @@ module msx2
     wire  [7:0] d_to_cpu, d_from_cpu;
     wire        mreq_n, wr_n, m1_n, iorq_n, rd_n, rfrsh_n, wait_n;
 
-    // WAIT while a cartridge SDRAM read is outstanding (ready is registered
-    // and drops a few clocks after the request; the T80 samples WAIT late
-    // enough in T2 to see it)
-    wire sdram_wait_n = ~(slots_sdram_rd & ~sdram_ready);
+    // WAIT while a cartridge or mapper-RAM SDRAM read is outstanding (ready
+    // is registered and drops a few clocks after the request; the T80
+    // samples WAIT late enough in T2 to see it). Writes post freely: a
+    // following access waits naturally because ready stays low until the
+    // write completes.
+    wire sdram_wait_n = ~((slots_sdram_rd | mapram_rd) & ~sdram_ready);
 
     t80pa #(.Mode(0)) u_t80
     (
@@ -671,20 +673,22 @@ module msx2
     wire sub_rom_en = sltsl30 & (page == 2'b00);
 
     //--------------------------------------------------------------------------
-    // Slot 3-2: Memory mapper RAM, 128kB (8 segments of 16kB), I/O FC-FF
-    // (128kB covers the Konami late-era games that refuse to run on 64kB --
-    // SD Snatcher's loader checks and FAILs explicitly. Block RAM has the
-    // room since the diagnostics-era cuts.)
+    // Slot 3-2: Memory mapper RAM, 256kB (16 segments of 16kB), I/O FC-FF
+    //
+    // The RAM lives in SDRAM (region 011): the FPGA has exactly 308 M10K
+    // blocks and a 128kB BRAM mapper -- the minimum for SD Snatcher and
+    // other late Konami titles, whose loaders check and refuse 64kB --
+    // does not fit. Accesses ride the same CPU-paced WAIT-state path the
+    // cartridge ROM reads use; moving it here also frees 64 blocks.
     //--------------------------------------------------------------------------
     // Only SEG_BITS of each segment register are implemented. The unimplemented
     // bits must read back as 1, because software sizes the mapper by writing a
     // segment number and reading it back: storing all 8 bits would advertise
     // 256 segments (4MB) while only SEG_BITS worth of RAM exists, and every
     // access above that would silently alias onto memory already in use.
-    localparam SEG_BITS = 3; // 8 segments x 16kB = 128kB
+    localparam SEG_BITS = 4; // 16 segments x 16kB = 256kB
 
     reg  [7:0] map_reg[3:0];
-    wire [7:0] map_q;
     wire [SEG_BITS-1:0] map_seg = map_reg[page][SEG_BITS-1:0];
 
     function [7:0] map_mask(input [7:0] seg);
@@ -703,14 +707,9 @@ module msx2
         end
     end
 
-    spram #(.addr_width(SEG_BITS+14), .mem_name("MAPRAM")) map_ram
-    (
-        .clock   ( clk                        ),
-        .address ( {map_seg, a[13:0]}         ),
-        .q       ( map_q                      ),
-        .data    ( d_from_cpu                 ),
-        .wren    ( sltsl32 & ~wr_n            )
-    );
+    wire        mapram_rd   = sltsl32 & ~rd_n;
+    wire        mapram_wr   = sltsl32 & ~wr_n;
+    wire [24:0] mapram_addr = {3'b011, {(8-SEG_BITS){1'b0}}, map_seg, a[13:0]};
 
     //--------------------------------------------------------------------------
     // CPU data multiplex
@@ -721,7 +720,7 @@ module msx2
                       ~(SLTSL_n[2])          ? d_from_slots   :
                       (exp3_sel & ~rd_n)     ? ~exp3_reg      :
                       (sub_rom_en & ~rd_n)   ? sub_rom_q      :
-                      (sltsl32 & ~rd_n)      ? map_q          :
+                      (sltsl32 & ~rd_n)      ? sdram_dout     :
                       (vdp_sel & ~rd_n)      ? d_from_vdp     :
                       (rtc_sel & ~rd_n)      ? d_from_rtc     :
                       (map_sel & ~rd_n)      ? map_reg[a[1:0]]:
@@ -896,16 +895,21 @@ module msx2
         .db_valid_B    ( db_valid_B    )
     );
 
+    wire mapram_access = mapram_rd | mapram_wr;
+
     assign sdram_addr = verifying      ? {3'b001, v_addr[21:0]}     :
                         ioctl_isMAPDB  ? {3'b010, ioctl_addr[21:0]} :
                         db_scanning    ? {3'b010, db_addr[21:0]}    :
+                        mapram_access  ? mapram_addr                :
                                          slots_sdram_addr;
-    assign sdram_din  = slots_sdram_din;
+    assign sdram_din  = mapram_wr ? d_from_cpu : slots_sdram_din;
     assign sdram_we   = ioctl_isMAPDB ? ioctl_wr :
-                        (verifying | db_scanning) ? 1'b0 : slots_sdram_we;
+                        (verifying | db_scanning) ? 1'b0 :
+                        mapram_wr ? 1'b1 : slots_sdram_we;
     assign sdram_rd   = verifying   ? v_rd  :
                         db_scanning ? db_rd :
-                        ioctl_isMAPDB ? 1'b0 : slots_sdram_rd;
+                        ioctl_isMAPDB ? 1'b0 :
+                        mapram_rd   ? 1'b1  : slots_sdram_rd;
 
     slots #(.INTERNAL_RAM(0), .USE_FDD(0)) slots
     (
