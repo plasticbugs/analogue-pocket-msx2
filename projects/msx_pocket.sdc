@@ -42,6 +42,12 @@ create_generated_clock -name dram_clk \
     -source [get_pins {ic|core_pll|core_pll_inst|altera_pll_i|general[3].gpll~PLL_OUTPUT_COUNTER|divclk}] \
     -invert [get_ports {dram_clk}]
 
+# The BSP's identical output delays run BEFORE this file creates dram_clk
+# (SDC files process in order), so they are still ignored there; they must
+# be restated here. tDS setup 1.5ns, tDH hold 0.8ns at the chip.
+set_output_delay -clock dram_clk -max 1.5 [get_ports {dram_a[*] dram_ba[*] dram_cke dram_dqm[*] dram_dq[*] dram_ras_n dram_cas_n dram_we_n}]
+set_output_delay -clock dram_clk -min -0.8 [get_ports {dram_a[*] dram_ba[*] dram_cke dram_dqm[*] dram_dq[*] dram_ras_n dram_cas_n dram_we_n}]
+
 # tAC(CL2) max 6.0ns, tOH min 2.5ns
 set_input_delay -clock dram_clk -max 6.0 [get_ports {dram_dq[*]}]
 set_input_delay -clock dram_clk -min 2.5 [get_ports {dram_dq[*]}]
