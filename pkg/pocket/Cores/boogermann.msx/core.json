@@ -9,8 +9,8 @@
             "description": "MSX2 core: V9938, 128kB VRAM, 256kB RAM, mapper autodetect, C-BIOS.",
             "author": "boogermann & plasticbugs",
             "url": "https://github.com/plasticbugs/analogue-pocket-msx2",
-            "version": "0.2.0",
-            "date_release": "2026-08-11"
+            "version": "0.3.0",
+            "date_release": "2026-08-15"
         },
         "framework": {
             "target_product": "Analogue Pocket",

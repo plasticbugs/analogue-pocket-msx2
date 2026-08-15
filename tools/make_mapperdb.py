@@ -69,15 +69,24 @@ def main():
     counts = Counter()
     skipped = Counter()
 
-    for sw in tree.getroot().iter("software"):
+    def rom_elements(sw):
+        # old format: <software><dump><rom|megarom><sha1>..<type>..
+        # new format: <software><rom sha1=".." type=".."/>
+        found = False
         for dump in sw.iter("dump"):
-            rom = dump.find("rom")
-            if rom is None:
-                rom = dump.find("megarom")
-            if rom is None:
-                continue
-            rtype = rom.findtext("type") or "plain"
-            sha1 = rom.findtext("sha1")
+            for tag in ("rom", "megarom"):
+                rom = dump.find(tag)
+                if rom is not None:
+                    found = True
+                    yield rom
+        if not found:
+            for rom in sw.findall("rom"):
+                yield rom
+
+    for sw in tree.getroot().iter("software"):
+        for rom in rom_elements(sw):
+            rtype = rom.get("type") or rom.findtext("type") or "plain"
+            sha1 = rom.get("sha1") or rom.findtext("sha1")
             if sha1 is None:
                 h = rom.find("hash")
                 sha1 = h.text if h is not None else None
