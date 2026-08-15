@@ -24,7 +24,7 @@
             },
             {
                 "id": 2,
-                "name": "BIOS",
+                "name": "Main BIOS",
                 "required": false,
                 "parameters": "0x109",
                 "extensions": [
@@ -34,7 +34,7 @@
             },
             {
                 "id": 3,
-                "name": "FW BIOS",
+                "name": "Logo ROM (C-BIOS)",
                 "required": false,
                 "parameters": "0x109",
                 "extensions": [
@@ -44,7 +44,7 @@
             },
             {
                 "id": 5,
-                "name": "Sub ROM",
+                "name": "MSX2 Sub ROM (ext)",
                 "required": false,
                 "parameters": "0x109",
                 "extensions": [

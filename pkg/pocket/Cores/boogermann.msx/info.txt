@@ -10,3 +10,12 @@ each "* Btn Key" slider picks a keyboard key by number.
 43 ESC 44 TAB 45 BS 46-49 arrows (up/down/left/right)
 50-54 F1-F5 | 55 SELECT 56 STOP 57 HOME 58 INS 59 DEL
 The d-pad always types the arrow keys while Joy2Key is on.
+
+Using a real machine BIOS (instead of built-in C-BIOS):
+- Main BIOS: your machine's main BIOS+BASIC dump, 32kB
+  (usually named like msx2.rom, *bios*.rom)
+- MSX2 Sub ROM (ext): the matching sub ROM, 16kB
+  (usually named like msx2ext.rom, *ext*.rom, *sub*.rom)
+Load BOTH, from the SAME machine, or the core will hang.
+Quit and relaunch the core to return to C-BIOS.
+Logo ROM (C-BIOS) is the C-BIOS boot splash; leave it alone.
