@@ -37,6 +37,7 @@ module mapper_db
         input             ioctl_isROMA,
         input             ioctl_isROMB,
         input             ioctl_isMAPDB,
+        input             hold,         // parent owns the SDRAM port: wait
         output            stall,        // hash engine busy: hold the bridge
         // SDRAM read port (valid while scanning)
         output            scanning,
@@ -49,10 +50,9 @@ module mapper_db
         output reg        db_valid_A = 0,
         output reg  [3:0] db_mapper_B,
         output reg        db_valid_B = 0,
-        output            db_loaded_o
+        output            db_loaded_o,
+        output            db_pending
     );
-
-    assign db_loaded_o = db_loaded;
 
     reg ioctl_wr_d, rom_stream_d, sha1_done_d, mapdb_d;
 
@@ -107,6 +107,9 @@ module mapper_db
     // per-slot digests waiting to be looked up
     reg  [63:0] db_key_A, db_key_B;
     reg   [1:0] db_pend     = 0;
+
+    assign db_loaded_o = db_loaded;
+    assign db_pending  = db_loaded & (db_pend != 0);
     reg         hash_slot;                // 0 = A, 1 = B
 
     // lookup engine
@@ -137,7 +140,7 @@ module mapper_db
         end
 
         if (!db_scanning) begin
-            if (db_loaded && db_pend != 0 && !rom_stream && !ioctl_isMAPDB) begin
+            if (db_loaded && db_pend != 0 && !rom_stream && !ioctl_isMAPDB && !hold) begin
                 db_slot     <= db_pend[0] ? 1'b0 : 1'b1;
                 db_scanning <= 1;
                 db_entry    <= 0;

@@ -114,7 +114,7 @@ module msx2
 
     wire        vram_clearing = ~vram_clr_cnt[16];
     wire [15:0] vram_clr_addr = vram_clr_cnt[15:0];
-    wire        reset         = reset_i | vram_clearing | verifying | db_scanning;
+    wire        reset         = reset_i | vram_clearing | verifying | db_scanning | db_pending;
 
     localparam VRAM_WIPE = 1;
 
@@ -876,7 +876,7 @@ module msx2
     // Mapper database autodetect (see rtl/mapper_db.v). The machine is held
     // in reset while a lookup scans SDRAM, like the VRAM wipe.
     //--------------------------------------------------------------------------
-    wire        db_scanning, sha1_busy, db_rd;
+    wire        db_scanning, db_pending, sha1_busy, db_rd;
     wire [24:0] db_addr;
     wire  [3:0] db_mapper_A, db_mapper_B;
     wire        db_valid_A, db_valid_B;
@@ -892,6 +892,10 @@ module msx2
         .ioctl_isROMA  ( ioctl_isROMA  ),
         .ioctl_isROMB  ( ioctl_isROMB  ),
         .ioctl_isMAPDB ( ioctl_isMAPDB ),
+        // the readback verifier (diag builds) owns the SDRAM mux with
+        // higher priority at exactly reset-release; scanning then would
+        // read cart bytes as table entries and miss every key
+        .hold          ( verifying     ),
         .stall         ( sha1_busy     ),
         .scanning      ( db_scanning   ),
         .db_addr       ( db_addr       ),
@@ -902,7 +906,8 @@ module msx2
         .db_valid_A    ( db_valid_A    ),
         .db_mapper_B   ( db_mapper_B   ),
         .db_valid_B    ( db_valid_B    ),
-        .db_loaded_o   ( db_loaded_o   )
+        .db_loaded_o   ( db_loaded_o   ),
+        .db_pending    ( db_pending    )
     );
 
     wire mapram_access = mapram_rd | mapram_wr;
