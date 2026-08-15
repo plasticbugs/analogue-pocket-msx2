@@ -463,6 +463,13 @@ module msx2
             diag_rgb = verify_sum[3'd7 - x_cnt[7:5]] ? 24'h00FF00 : 24'h202020;
             if (x_cnt[4:0] < 4) diag_rgb = 24'h000000;
         end
+        else if (DIAG_INDICATORS && vis_line >= 9'd26 && vis_line < 9'd30 && x_cnt < 11'd256) begin
+            // row 5 (white): database status --
+            //   {db_loaded, 0, 0, db_valid_A, db_mapper_A[3:0]}
+            diag_on  = 1'b1;
+            diag_rgb = db_status[3'd7 - x_cnt[7:5]] ? 24'hFFFFFF : 24'h202020;
+            if (x_cnt[4:0] < 4) diag_rgb = 24'h000000;
+        end
         else if (DIAG_LINES && x_cnt < 11'd280) begin
             if (vis_line < 9'd32) begin
                 diag_on = 1'b1;
@@ -873,6 +880,8 @@ module msx2
     wire [24:0] db_addr;
     wire  [3:0] db_mapper_A, db_mapper_B;
     wire        db_valid_A, db_valid_B;
+    wire        db_loaded_o;
+    wire  [7:0] db_status = {db_loaded_o, 2'b00, db_valid_A, db_mapper_A};
 
     mapper_db mapper_db
     (
@@ -892,7 +901,8 @@ module msx2
         .db_mapper_A   ( db_mapper_A   ),
         .db_valid_A    ( db_valid_A    ),
         .db_mapper_B   ( db_mapper_B   ),
-        .db_valid_B    ( db_valid_B    )
+        .db_valid_B    ( db_valid_B    ),
+        .db_loaded_o   ( db_loaded_o   )
     );
 
     wire mapram_access = mapram_rd | mapram_wr;

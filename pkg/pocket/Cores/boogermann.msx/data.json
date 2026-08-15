@@ -55,7 +55,7 @@
             {
                 "id": 6,
                 "name": "Mapper DB",
-                "required": false,
+                "required": true,
                 "parameters": "0x8",
                 "filename": "mapperdb.bin",
                 "address": "0x00000000",

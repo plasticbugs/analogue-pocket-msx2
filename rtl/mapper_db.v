@@ -48,8 +48,11 @@ module mapper_db
         output reg  [3:0] db_mapper_A,
         output reg        db_valid_A = 0,
         output reg  [3:0] db_mapper_B,
-        output reg        db_valid_B = 0
+        output reg        db_valid_B = 0,
+        output            db_loaded_o
     );
+
+    assign db_loaded_o = db_loaded;
 
     reg ioctl_wr_d, rom_stream_d, sha1_done_d, mapdb_d;
 
