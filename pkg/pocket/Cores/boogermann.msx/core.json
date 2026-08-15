@@ -6,8 +6,8 @@
                 "msx"
             ],
             "shortname": "msx",
-            "description": "MSX2: V9938, 256kB RAM, mapper autodetect, C-BIOS built in",
-            "author": "boogermann & plasticbugs",
+            "description": "MSX2 core by plasticbugs and boogermann",
+            "author": "boogermann",
             "url": "https://github.com/plasticbugs/analogue-pocket-msx2",
             "version": "0.3.0",
             "date_release": "2026-08-15"
