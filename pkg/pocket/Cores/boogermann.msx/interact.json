@@ -50,70 +50,125 @@
             { "name": "PAL Video", "id": 3, "type": "check", "enabled": true, "persist": true, "address": "0xF1000000", "defaultval": 0, "mask": "0xFFFFFEFF", "value": "0x00000100" },
             { "name": "Enable Joy2Key", "id": 1000, "type": "check", "enabled": true, "persist": true, "address": "0xF1000000", "defaultval": 0, "mask": "0xFFFFFBFF", "value": "0x00000400" },
             {
-                "name": "Y Btn Key",
+                "name": "Map Y to key",
                 "id": 1001,
-                "type": "slider_u32",
+                "type": "list",
                 "enabled": true,
                 "persist": true,
                 "address": "0xF2000000",
                 "defaultval": 0,
                 "mask": "0xFFFFFFC0",
-                "graphical": { "signed": false, "min": 0, "max": 59, "adjust_small": 1, "adjust_large": 10 }
+                "options": [
+                    { "name": "None", "value": "0x00000000" },
+                    { "name": "SPACE", "value": "0x00000025" },
+                    { "name": "RETURN", "value": "0x00000026" },
+                    { "name": "SHIFT", "value": "0x00000027" },
+                    { "name": "Z", "value": "0x0000001A" },
+                    { "name": "X", "value": "0x00000018" },
+                    { "name": "C", "value": "0x00000003" },
+                    { "name": "M", "value": "0x0000000D" },
+                    { "name": "N", "value": "0x0000000E" },
+                    { "name": "Y", "value": "0x00000019" },
+                    { "name": "1", "value": "0x0000001C" },
+                    { "name": "2", "value": "0x0000001D" },
+                    { "name": "3", "value": "0x0000001E" },
+                    { "name": "ESC", "value": "0x0000002B" },
+                    { "name": "CTRL", "value": "0x00000028" },
+                    { "name": "GRAPH", "value": "0x00000029" }
+                ]
             },
             {
-                "name": "X Btn Key",
+                "name": "Map X to key",
                 "id": 1002,
-                "type": "slider_u32",
+                "type": "list",
                 "enabled": true,
                 "persist": true,
                 "address": "0xF2000000",
                 "defaultval": 0,
                 "mask": "0xFFFFF03F",
-                "graphical": { "signed": false, "min": 0, "max": 59, "adjust_small": 1, "adjust_large": 10 }
+                "options": [
+                    { "name": "None", "value": "0x00000000" },
+                    { "name": "SPACE", "value": "0x00000940" },
+                    { "name": "RETURN", "value": "0x00000980" },
+                    { "name": "SHIFT", "value": "0x000009C0" },
+                    { "name": "Z", "value": "0x00000680" },
+                    { "name": "X", "value": "0x00000600" },
+                    { "name": "C", "value": "0x000000C0" },
+                    { "name": "M", "value": "0x00000340" },
+                    { "name": "N", "value": "0x00000380" },
+                    { "name": "Y", "value": "0x00000640" },
+                    { "name": "1", "value": "0x00000700" },
+                    { "name": "2", "value": "0x00000740" },
+                    { "name": "3", "value": "0x00000780" },
+                    { "name": "ESC", "value": "0x00000AC0" },
+                    { "name": "CTRL", "value": "0x00000A00" },
+                    { "name": "GRAPH", "value": "0x00000A40" }
+                ]
             },
             {
-                "name": "L Btn Key",
+                "name": "Map L to key",
                 "id": 1003,
-                "type": "slider_u32",
+                "type": "list",
                 "enabled": true,
                 "persist": true,
                 "address": "0xF2000000",
                 "defaultval": 0,
                 "mask": "0xFFFC0FFF",
-                "graphical": { "signed": false, "min": 0, "max": 59, "adjust_small": 1, "adjust_large": 10 }
+                "options": [
+                    { "name": "None", "value": "0x00000000" },
+                    { "name": "SHIFT", "value": "0x00027000" },
+                    { "name": "CTRL", "value": "0x00028000" },
+                    { "name": "GRAPH", "value": "0x00029000" },
+                    { "name": "F1", "value": "0x00032000" }
+                ]
             },
             {
-                "name": "R Btn Key",
+                "name": "Map R to key",
                 "id": 1004,
-                "type": "slider_u32",
+                "type": "list",
                 "enabled": true,
                 "persist": true,
                 "address": "0xF2000000",
                 "defaultval": 0,
                 "mask": "0xFF03FFFF",
-                "graphical": { "signed": false, "min": 0, "max": 59, "adjust_small": 1, "adjust_large": 10 }
+                "options": [
+                    { "name": "None", "value": "0x00000000" },
+                    { "name": "SHIFT", "value": "0x009C0000" },
+                    { "name": "CTRL", "value": "0x00A00000" },
+                    { "name": "GRAPH", "value": "0x00A40000" },
+                    { "name": "F5", "value": "0x00D80000" }
+                ]
             },
             {
-                "name": "Select Btn Key",
+                "name": "Map Select to key",
                 "id": 1005,
-                "type": "slider_u32",
+                "type": "list",
                 "enabled": true,
                 "persist": true,
                 "address": "0xF2000000",
                 "defaultval": 0,
                 "mask": "0xC0FFFFFF",
-                "graphical": { "signed": false, "min": 0, "max": 59, "adjust_small": 1, "adjust_large": 10 }
+                "options": [
+                    { "name": "None", "value": "0x00000000" },
+                    { "name": "SELECT", "value": "0x37000000" },
+                    { "name": "F1", "value": "0x32000000" }
+                ]
             },
             {
-                "name": "Start Btn Key",
+                "name": "Map Start to key",
                 "id": 1006,
-                "type": "slider_u32",
+                "type": "list",
                 "enabled": true,
                 "persist": true,
                 "address": "0xF1000000",
                 "defaultval": 0,
                 "mask": "0xFFFC0FFF",
-                "graphical": { "signed": false, "min": 0, "max": 59, "adjust_small": 1, "adjust_large": 10 }
+                "options": [
+                    { "name": "None", "value": "0x00000000" },
+                    { "name": "SPACE", "value": "0x00025000" },
+                    { "name": "RETURN", "value": "0x00026000" },
+                    { "name": "F5", "value": "0x00036000" }
+                ]
             }
         ],
         "messages": [
