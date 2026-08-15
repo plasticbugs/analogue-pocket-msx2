@@ -46,13 +46,16 @@ module cart_asci16
 
     always @(posedge reset, posedge clk) begin
         if (reset) begin
-            bank0 <= r_type ? 8'h0f : 8'h00;
+            // R-Type: page 1 is FIXED at bank 0x17 (the last 16kB of the
+            // 384kB image, holding the boot code); only page 2 switches,
+            // on writes anywhere in 4000-7FFFh (openMSX RomRType)
+            bank0 <= r_type ? 8'h17 : 8'h00;
             bank1 <= 8'h00;
         end
         else begin
             if (cs && wr) begin
                 if (r_type) begin
-                    if (addr[15:12] == 4'b0111) begin
+                    if (addr[15:14] == 2'b01) begin
                         bank1 <= d_from_cpu[4] ? {5'b00010,d_from_cpu[2:0]} : {3'b000,d_from_cpu[4:0]};
                     end
                 end
