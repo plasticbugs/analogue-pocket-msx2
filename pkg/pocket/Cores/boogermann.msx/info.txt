@@ -1,26 +1,22 @@
-MSX is a standardized home computer architecture, announced by ASCII Corporation on June 16, 1983.
-It was initially conceived by Microsoft as a product for the Eastern sector, and jointly marketed by Kazuhiko Nishi, the director at ASCII Corporation.
-Microsoft and Nishi conceived the project as an attempt to create unified standards among various home computing system manufacturers of the period,
-in the same fashion as the VHS standard for home video tape machines.
-The first MSX computer sold to the public was a Mitsubishi ML-8000, released on October 21, 1983, thus marking its official release date
-Button-to-key mapping (Core Settings, with Joy2Key enabled):
-each "* Btn Key" slider picks a keyboard key by number.
-0 none | 1-26 letters A-Z | 27-36 digits 0-9
-37 SPACE 38 RETURN 39 SHIFT 40 CTRL 41 GRAPH 42 CODE
-43 ESC 44 TAB 45 BS 46-49 arrows (up/down/left/right)
-50-54 F1-F5 | 55 SELECT 56 STOP 57 HOME 58 INS 59 DEL
-The d-pad always types the arrow keys while Joy2Key is on.
+MSX2 for Analogue Pocket.
+V9938 VDP, 128kB VRAM, 256kB RAM, SCC audio,
+13 cartridge mappers with automatic detection.
 
-Using a real machine BIOS (instead of built-in C-BIOS):
-- Main BIOS: your machine's main BIOS+BASIC dump, 32kB
-  (usually named like msx2.rom, *bios*.rom)
-- MSX2 Sub ROM (ext): the matching sub ROM, 16kB
-  (usually named like msx2ext.rom, *ext*.rom, *sub*.rom)
-Load BOTH, from the SAME machine, or the core will hang.
-Quit and relaunch the core to return to C-BIOS.
-Logo ROM (C-BIOS) is the C-BIOS boot splash; leave it alone.
+Mapper: leave on Auto. Known dumps are identified
+by a database; unknown ones by signature analysis.
 
-MSX2 core by plasticbugs, built on the MSX core by boogermann
-(Marcus Andrade) / Molekula, with the V9938 VDP from the ESE
-MSX-System (ESE Artists' Factory / t.hara) as used in MiSTer.
-Mapper database derived from the openMSX Software Database.
+Real machine BIOS (optional, else C-BIOS is used):
+* Main BIOS: 32kB main+BASIC dump (msx2.rom, bios)
+* MSX2 Sub ROM: matching 16kB ext/sub dump
+* Load BOTH from the SAME machine or it will hang
+* Quit and relaunch the core to restore C-BIOS
+* Logo ROM is the C-BIOS splash. Leave it alone.
+
+Joy2Key (enable in Core Settings):
+* D-pad types the cursor keys
+* Map Y/X/L/R/Select/Start to keys in the menus
+
+MSX2 core by plasticbugs, based on the MSX core
+by boogermann (Marcus Andrade) and Molekula.
+V9938 from the ESE MSX-System (t.hara) via MiSTer.
+Mapper database from the openMSX Software Database.

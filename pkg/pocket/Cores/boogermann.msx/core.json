@@ -6,7 +6,7 @@
                 "msx"
             ],
             "shortname": "msx",
-            "description": "MSX2 core: V9938, 128kB VRAM, 256kB RAM, mapper autodetect, C-BIOS.",
+            "description": "MSX2: V9938, 256kB RAM, mapper autodetect, C-BIOS built in",
             "author": "boogermann & plasticbugs",
             "url": "https://github.com/plasticbugs/analogue-pocket-msx2",
             "version": "0.3.0",
