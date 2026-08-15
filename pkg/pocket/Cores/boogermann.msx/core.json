@@ -6,9 +6,9 @@
                 "msx"
             ],
             "shortname": "msx",
-            "description": "MSX2 home computer core (V9938, 128kB VRAM, 128kB mapper RAM, C-BIOS).",
-            "author": "boogermann",
-            "url": "https://github.com/opengateware/computer-msx",
+            "description": "MSX2 core: V9938, 128kB VRAM, 256kB RAM, mapper autodetect, C-BIOS.",
+            "author": "boogermann & plasticbugs",
+            "url": "https://github.com/plasticbugs/analogue-pocket-msx2",
             "version": "0.2.0",
             "date_release": "2026-08-11"
         },

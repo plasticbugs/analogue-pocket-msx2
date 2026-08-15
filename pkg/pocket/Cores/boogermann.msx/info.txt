@@ -19,3 +19,8 @@ Using a real machine BIOS (instead of built-in C-BIOS):
 Load BOTH, from the SAME machine, or the core will hang.
 Quit and relaunch the core to return to C-BIOS.
 Logo ROM (C-BIOS) is the C-BIOS boot splash; leave it alone.
+
+MSX2 core by plasticbugs, built on the MSX core by boogermann
+(Marcus Andrade) / Molekula, with the V9938 VDP from the ESE
+MSX-System (ESE Artists' Factory / t.hara) as used in MiSTer.
+Mapper database derived from the openMSX Software Database.
