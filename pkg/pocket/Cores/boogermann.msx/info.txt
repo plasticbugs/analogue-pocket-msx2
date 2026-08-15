@@ -3,3 +3,10 @@ It was initially conceived by Microsoft as a product for the Eastern sector, and
 Microsoft and Nishi conceived the project as an attempt to create unified standards among various home computing system manufacturers of the period,
 in the same fashion as the VHS standard for home video tape machines.
 The first MSX computer sold to the public was a Mitsubishi ML-8000, released on October 21, 1983, thus marking its official release date
+Button-to-key mapping (Core Settings, with Joy2Key enabled):
+each "* Btn Key" slider picks a keyboard key by number.
+0 none | 1-26 letters A-Z | 27-36 digits 0-9
+37 SPACE 38 RETURN 39 SHIFT 40 CTRL 41 GRAPH 42 CODE
+43 ESC 44 TAB 45 BS 46-49 arrows (up/down/left/right)
+50-54 F1-F5 | 55 SELECT 56 STOP 57 HOME 58 INS 59 DEL
+The d-pad always types the arrow keys while Joy2Key is on.

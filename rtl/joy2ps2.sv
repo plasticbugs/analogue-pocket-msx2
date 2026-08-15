@@ -30,7 +30,9 @@ module joy2ps2
         input   wire        clk,
         input   wire        reset,     // Reset signal
         input   wire        enable,    // Reset signal
-        input   wire [23:0] key_map,   // Key Mapping
+        input   wire [35:0] key_map,   // six 6-bit key indices:
+                                       // [5:0] Y, [11:6] X, [17:12] L, [23:18] R,
+                                       // [29:24] Select, [35:30] Start
         input   wire  [9:0] joy_key,   // [9] Up, [8] Down, [7] Left, [6] Right,
                                        // [5] Start, [4] Select, [3] R1, [2] L1, [1] X, [0] Y
         output logic [10:0] ps2_key    // [10] Strobe, [9] Pressed/Released, [8:0] Scancode
@@ -58,90 +60,65 @@ module joy2ps2
     reg [8:0] key_code_saved;
     reg       save_key;
 
-    parameter SC_END      = 9'h169, // SELECT
-              SC_PG_UP    = 9'h17D, // STOP
-              SC_L_ALT    = 9'h011, // GRAPH
-              SC_L_CRTL   = 9'h014, // CRTL
-              SC_UP       = 9'h175, // Arrow Up
+    parameter SC_UP       = 9'h175, // Arrow Up
               SC_DOWN     = 9'h172, // Arrow Down
               SC_LEFT     = 9'h16B, // Arrow Left
-              SC_RIGHT    = 9'h174, // Arrow Right
-              SC_F1       = 9'h005, SC_1        = 9'h016,
-              SC_F2       = 9'h006, SC_2        = 9'h01E,
-              SC_F3       = 9'h004, SC_3        = 9'h026,
-              SC_F4       = 9'h00C, SC_4        = 9'h025,
-              SC_F5       = 9'h003, SC_5        = 9'h02E,
-              SC_M        = 9'h03A, SC_N        = 9'h031,
-              SC_SPACE    = 9'h029, SC_SHIFT    = 9'h012,
-              SC_ESC      = 9'h076, SC_RETURN   = 9'h05A,
-              SC_NONE     = 9'h000;
+              SC_RIGHT    = 9'h174; // Arrow Right
 
-    reg [8:0] MAP_Y,  MAP_X;
-    reg [8:0] MAP_L,  MAP_R;
-    reg [8:0] MAP_ST, MAP_SE;
+    // Full keyboard table, indexed by the mapping sliders. The numbering is
+    // designed to be memorable without a manual: 0 none, 1-26 = A-Z,
+    // 27-36 = digits 0-9, then specials (documented in info.txt).
+    function [8:0] key_sc(input [5:0] i);
+        case (i)
+            6'd1 : key_sc = 9'h01C;  6'd2 : key_sc = 9'h032; // A B
+            6'd3 : key_sc = 9'h021;  6'd4 : key_sc = 9'h023; // C D
+            6'd5 : key_sc = 9'h024;  6'd6 : key_sc = 9'h02B; // E F
+            6'd7 : key_sc = 9'h034;  6'd8 : key_sc = 9'h033; // G H
+            6'd9 : key_sc = 9'h043;  6'd10: key_sc = 9'h03B; // I J
+            6'd11: key_sc = 9'h042;  6'd12: key_sc = 9'h04B; // K L
+            6'd13: key_sc = 9'h03A;  6'd14: key_sc = 9'h031; // M N
+            6'd15: key_sc = 9'h044;  6'd16: key_sc = 9'h04D; // O P
+            6'd17: key_sc = 9'h015;  6'd18: key_sc = 9'h02D; // Q R
+            6'd19: key_sc = 9'h01B;  6'd20: key_sc = 9'h02C; // S T
+            6'd21: key_sc = 9'h03C;  6'd22: key_sc = 9'h02A; // U V
+            6'd23: key_sc = 9'h01D;  6'd24: key_sc = 9'h022; // W X
+            6'd25: key_sc = 9'h035;  6'd26: key_sc = 9'h01A; // Y Z
+            6'd27: key_sc = 9'h045;  6'd28: key_sc = 9'h016; // 0 1
+            6'd29: key_sc = 9'h01E;  6'd30: key_sc = 9'h026; // 2 3
+            6'd31: key_sc = 9'h025;  6'd32: key_sc = 9'h02E; // 4 5
+            6'd33: key_sc = 9'h036;  6'd34: key_sc = 9'h03D; // 6 7
+            6'd35: key_sc = 9'h03E;  6'd36: key_sc = 9'h046; // 8 9
+            6'd37: key_sc = 9'h029;                          // SPACE
+            6'd38: key_sc = 9'h05A;                          // RETURN
+            6'd39: key_sc = 9'h012;                          // SHIFT
+            6'd40: key_sc = 9'h014;                          // CTRL
+            6'd41: key_sc = 9'h111;                          // GRAPH
+            6'd42: key_sc = 9'h009;                          // CODE
+            6'd43: key_sc = 9'h076;                          // ESC
+            6'd44: key_sc = 9'h00D;                          // TAB
+            6'd45: key_sc = 9'h066;                          // BACKSPACE
+            6'd46: key_sc = SC_UP;
+            6'd47: key_sc = SC_DOWN;
+            6'd48: key_sc = SC_LEFT;
+            6'd49: key_sc = SC_RIGHT;
+            6'd50: key_sc = 9'h005;  6'd51: key_sc = 9'h006; // F1 F2
+            6'd52: key_sc = 9'h004;  6'd53: key_sc = 9'h00C; // F3 F4
+            6'd54: key_sc = 9'h003;                          // F5
+            6'd55: key_sc = 9'h078;                          // SELECT (F11)
+            6'd56: key_sc = 9'h17C;                          // STOP
+            6'd57: key_sc = 9'h16C;                          // HOME
+            6'd58: key_sc = 9'h170;                          // INS
+            6'd59: key_sc = 9'h171;                          // DEL
+            default: key_sc = 9'h000;                        // none
+        endcase
+    endfunction
 
-    always_ff @(negedge clk) begin : assignMapping
-        case(key_map[3:0])
-            4'h1   : begin MAP_Y  = SC_SPACE;  end
-            4'h2   : begin MAP_Y  = SC_SHIFT;  end
-            4'h3   : begin MAP_Y  = SC_M;      end
-            4'h4   : begin MAP_Y  = SC_N;      end
-            4'h5   : begin MAP_Y  = SC_1;      end
-            4'h6   : begin MAP_Y  = SC_2;      end
-            4'h7   : begin MAP_Y  = SC_3;      end
-            4'h8   : begin MAP_Y  = SC_4;      end
-            4'h9   : begin MAP_Y  = SC_ESC;    end
-            4'hA   : begin MAP_Y  = SC_RETURN; end
-            default: begin MAP_Y  = SC_NONE;   end
-        endcase
-        case(key_map[7:4])
-            4'h1   : begin MAP_X  = SC_SPACE;  end
-            4'h2   : begin MAP_X  = SC_SHIFT;  end
-            4'h3   : begin MAP_X  = SC_M;      end
-            4'h4   : begin MAP_X  = SC_N;      end
-            4'h5   : begin MAP_X  = SC_1;      end
-            4'h6   : begin MAP_X  = SC_2;      end
-            4'h7   : begin MAP_X  = SC_3;      end
-            4'h8   : begin MAP_X  = SC_4;      end
-            4'h9   : begin MAP_X  = SC_ESC;    end
-            4'hA   : begin MAP_X  = SC_RETURN; end
-            default: begin MAP_X  = SC_NONE;   end
-        endcase
-        case(key_map[11:8])
-            4'h1   : begin MAP_L  = SC_END;    end
-            4'h2   : begin MAP_L  = SC_PG_UP;  end
-            4'h3   : begin MAP_L  = SC_L_ALT;  end
-            4'h4   : begin MAP_L  = SC_L_CRTL; end
-            4'h5   : begin MAP_L  = SC_F1;     end
-            default: begin MAP_L  = SC_NONE;   end
-        endcase
-        case(key_map[15:12])
-            4'h1   : begin MAP_R  = SC_END;    end
-            4'h2   : begin MAP_R  = SC_PG_UP;  end
-            4'h3   : begin MAP_R  = SC_L_ALT;  end
-            4'h4   : begin MAP_R  = SC_L_CRTL; end
-            4'h5   : begin MAP_R  = SC_F5;     end
-            default: begin MAP_R  = SC_NONE;   end
-        endcase
-        case(key_map[19:16])
-            4'h1   : begin MAP_SE = SC_SPACE;  end
-            4'h2   : begin MAP_SE = SC_F1;     end
-            4'h3   : begin MAP_SE = SC_F2;     end
-            4'h4   : begin MAP_SE = SC_F3;     end
-            4'h5   : begin MAP_SE = SC_F4;     end
-            4'h6   : begin MAP_SE = SC_F5;     end
-            default: begin MAP_SE = SC_NONE;   end
-        endcase
-        case(key_map[23:20])
-            4'h1   : begin MAP_ST = SC_SPACE;  end
-            4'h2   : begin MAP_ST = SC_F1;     end
-            4'h3   : begin MAP_ST = SC_F2;     end
-            4'h4   : begin MAP_ST = SC_F3;     end
-            4'h5   : begin MAP_ST = SC_F4;     end
-            4'h6   : begin MAP_ST = SC_F5;     end
-            default: begin MAP_ST = SC_NONE;   end
-        endcase
-    end
+    wire [8:0] MAP_Y  = key_sc(key_map[5:0]);
+    wire [8:0] MAP_X  = key_sc(key_map[11:6]);
+    wire [8:0] MAP_L  = key_sc(key_map[17:12]);
+    wire [8:0] MAP_R  = key_sc(key_map[23:18]);
+    wire [8:0] MAP_SE = key_sc(key_map[29:24]);
+    wire [8:0] MAP_ST = key_sc(key_map[35:30]);
 
     always_ff @(posedge clk) begin : joy2scancode
         if (reset) begin

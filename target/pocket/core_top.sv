@@ -933,7 +933,10 @@ module core_top
 
     wire  [9:0] joy_key = { p1_up, p1_down, p1_left, p1_right,
                             p1_start, p1_select, p1_btn_r1, p1_btn_l1, p1_btn_x, p1_btn_y };
-    wire [23:0] key_map = { mod_sw2, mod_sw1, mod_sw0 };
+    // six 6-bit key indices: Y/X/L/R/Select in mod_sw[29:0] (0xF2000000),
+    // Start in dip_sw bits [17:12] (0xF1000000, above the mapper/PAL bits)
+    wire [35:0] key_map = { dip_sw2[1:0], dip_sw1[7:4],
+                            mod_sw3[5:0], mod_sw2, mod_sw1, mod_sw0 };
     wire [10:0] ps2_joy;
 
     joy2ps2 u_joy2key
