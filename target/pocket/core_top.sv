@@ -883,7 +883,10 @@ module core_top
     end
 
     wire mapper_reset = last_mapper != dip_sw0;
-    wire msx_reset = ioctl_isROMA | ioctl_isROMB | ioctl_isBIOS | ioctl_isSUBBIOS | mapper_reset;
+    // isMAPDB included: the database streams into SDRAM at core setup, and
+    // a running machine's mapper-RAM traffic would fight it in the mux and
+    // corrupt the table in place
+    wire msx_reset = ioctl_isROMA | ioctl_isROMB | ioctl_isBIOS | ioctl_isSUBBIOS | ioctl_isMAPDB | mapper_reset;
 
     // Synchronize the (clk_74a domain) user reset into the machine domain
     wire reset_sw_s;

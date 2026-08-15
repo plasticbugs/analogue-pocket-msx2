@@ -62,17 +62,62 @@ module mapper_db
 
     wire         sha1_done;
     wire [159:0] sha1_digest;
+    wire         sha1_busy;
+
+    // The bridge cannot be paused (data_io has no wait input), so bytes
+    // that arrive during an 80-cycle block compression must be buffered,
+    // not stalled: a 64-deep FIFO absorbs any burst (worst case ~16 bytes
+    // land during one compression) and drains between blocks.
+    reg  [7:0] fifo [0:63];
+    reg  [5:0] f_wp = 0, f_rp = 0;
+    reg  [6:0] f_cnt = 0;
+    reg        feed_en = 0;
+    reg  [7:0] feed_byte;
+    reg        end_pend = 0, fin = 0;
+
+    always @(posedge clk) begin
+        feed_en <= 0;
+        fin     <= 0;
+        if (rom_stream & ~rom_stream_d) begin
+            f_wp <= 0; f_rp <= 0; f_cnt <= 0;
+            end_pend <= 0;
+        end
+        else begin
+            if (stream_byte) begin
+                fifo[f_wp] <= ioctl_dout;
+                f_wp  <= f_wp + 1'd1;
+                f_cnt <= f_cnt + 1'd1;
+            end
+            if (rom_stream_d & ~rom_stream) end_pend <= 1;
+
+            if (f_cnt != 0 && !sha1_busy && !feed_en) begin
+                feed_byte <= fifo[f_rp];
+                feed_en   <= 1;
+                f_rp  <= f_rp + 1'd1;
+                f_cnt <= f_cnt - 1'd1 + (stream_byte ? 1'd1 : 1'd0);
+            end
+            else if (stream_byte) begin
+                // count already adjusted in the push branch above
+            end
+            if (end_pend && f_cnt == 0 && !feed_en && !sha1_busy) begin
+                fin      <= 1;
+                end_pend <= 0;
+            end
+        end
+    end
+
+    assign stall = 1'b0;  // kept for the port; the bridge never waited anyway
 
     sha1_stream sha1
     (
-        .clk      ( clk                         ),
-        .start    ( rom_stream & ~rom_stream_d  ),
-        .byte_en  ( stream_byte                 ),
-        .byte_in  ( ioctl_dout                  ),
-        .finalize ( rom_stream_d & ~rom_stream  ),
-        .busy     ( stall                       ),
-        .done     ( sha1_done                   ),
-        .digest   ( sha1_digest                 )
+        .clk      ( clk                        ),
+        .start    ( rom_stream & ~rom_stream_d ),
+        .byte_en  ( feed_en                    ),
+        .byte_in  ( feed_byte                  ),
+        .finalize ( fin                        ),
+        .busy     ( sha1_busy                  ),
+        .done     ( sha1_done                  ),
+        .digest   ( sha1_digest                )
     );
 
     // database header, captured as the file streams in

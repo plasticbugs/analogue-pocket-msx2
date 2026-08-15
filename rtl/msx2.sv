@@ -917,7 +917,8 @@ module msx2
                         db_scanning    ? {3'b010, db_addr[21:0]}    :
                         mapram_access  ? mapram_addr                :
                                          slots_sdram_addr;
-    assign sdram_din  = mapram_wr ? d_from_cpu : slots_sdram_din;
+    assign sdram_din  = ioctl_isMAPDB ? ioctl_dout :
+                        mapram_wr     ? d_from_cpu : slots_sdram_din;
     assign sdram_we   = ioctl_isMAPDB ? ioctl_wr :
                         (verifying | db_scanning) ? 1'b0 :
                         mapram_wr ? 1'b1 : slots_sdram_we;
