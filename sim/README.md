@@ -2,7 +2,7 @@
 
 `./run.sh` runs the V9938 in GHDL and reports the video timing it actually
 produces, which must match the scaler geometry declared in
-`pkg/pocket/Cores/boogermann.msx/video.json`.
+`pkg/pocket/Cores/plasticbugs.msx2/video.json`.
 
 Expected output for NTSC (`FORCED_V_MODE = 0`, `DISPRESO = 0`):
 

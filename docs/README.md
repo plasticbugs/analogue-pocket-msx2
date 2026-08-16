@@ -64,7 +64,7 @@ Despite not achieving its goal of global standardization, the MSX left a lasting
 
 ## Usage
 
-MSX1 ROMs and BIOS should be placed in `/Assets/msx/common`.
+MSX ROMs and BIOS should be placed in `/Assets/msx2/common`.
 
 C-BIOS is not a real BIOS rom and has certain restrictions, such as no support for anything other then cartridges (ROMs). So there is no support for disk, cassette or games that required BASIC.
 

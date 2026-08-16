@@ -24,7 +24,7 @@ if os.path.exists(OUT):
     shutil.rmtree(OUT)
 shutil.copytree(PKG, OUT)
 
-core_dir = os.path.join(OUT, "Cores", "boogermann.msx")
+core_dir = os.path.join(OUT, "Cores", "plasticbugs.msx2")
 with open(os.path.join(core_dir, "bitstream.rbf_r"), "wb") as f:
     f.write(reversed_rbf)
 

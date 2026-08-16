@@ -1,8 +1,8 @@
 {
-    "name": "msx",
-    "displayName": "msx",
-    "description": "MSX Compatible Gateware IP Core",
-    "author": "boogermann",
+    "name": "msx2",
+    "displayName": "msx2",
+    "description": "MSX2 Compatible Gateware IP Core",
+    "author": "plasticbugs",
     "version": "0.1.0",
     "license": "GPL-3.0-or-later",
     "repository": "https://github.com/opengateware/computer-msx",
@@ -15,10 +15,10 @@
         "program:pocket": "quartus_pgm -m jtag -c 1 -o \"p;projects/output_files/msx_pocket.sof@1\""
     },
     "hardware": {
-        "id": "msx",
-        "name": "MSX",
-        "year": 1983,
-        "manufacturer": "Microsoft"
+        "id": "msx2",
+        "name": "MSX2",
+        "year": 1985,
+        "manufacturer": "ASCII"
     },
     "release": {
         "image": "docs/git-social.png",

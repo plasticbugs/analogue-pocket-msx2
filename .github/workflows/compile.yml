@@ -63,7 +63,7 @@ jobs:
           cd release/pocket && zip -qr ../../msx2-pocket-sdcard.zip . && cd ../..
           gh release create "${GITHUB_REF_NAME}" \
             --title "MSX2 for Analogue Pocket ${GITHUB_REF_NAME}" \
-            --notes "Unzip onto the Pocket SD card root, overwriting previous files. Cartridge .rom files go in Assets/msx/common/." \
+            --notes "Unzip onto the Pocket SD card root, overwriting previous files. Cartridge .rom files go in Assets/msx2/common/." \
             msx2-pocket-sdcard.zip
 
       - name: Upload reports

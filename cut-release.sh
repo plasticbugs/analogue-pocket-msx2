@@ -35,5 +35,5 @@ gh release create "$TAG" --repo "$REPO" --target "$BRANCH" \
     --notes "${NOTES:-Build from CI run $RUN.
 
 Unzip onto the Pocket SD card root, overwriting previous files.
-Cartridge .rom files go in Assets/msx/common/.}" \
+Cartridge .rom files go in Assets/msx2/common/.}" \
     "$WORK/msx2-pocket-sdcard.zip"
