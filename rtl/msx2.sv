@@ -408,7 +408,8 @@ module msx2
         .DISPRESO        ( 1'b0          ), // 15kHz
         .NTSC_PAL_TYPE   ( ~vdp_pal      ), // 1: follow VDP R9 PAL bit, 0: forced
         .FORCED_V_MODE   ( vdp_pal       ),
-        .LEGACY_VGA      ( 1'b0          )
+        .LEGACY_VGA      ( 1'b0          ),
+        .PVIDEO_WINDOW_Y ( vdp_win_y     )
     );
 
     //--------------------------------------------------------------------------
@@ -497,21 +498,37 @@ module msx2
 
     //--------------------------------------------------------------------------
     // Hide-bottom-row option: some titles leave one row of stray pixels on the
-    // last emitted line. When enabled, that row is painted with the border
-    // colour, sampled from the left border of the line above it (never from
-    // the stray row itself, whose own border may carry the garbage).
+    // last line of the VDP's active display area. That row's position depends
+    // on the screen mode (192- or 212-line) and the R18 vertical adjust, so it
+    // is not computed but observed: PVIDEO_WINDOW_Y tracks the VDP's fetch
+    // line, which leads the displayed picture by exactly one scan line (GHDL
+    // measurement, sim/tb_winy.vhd: window lines 27..218 vs picture content
+    // 26..217), so the row painted next frame is the last window line minus
+    // one. The paint colour is the
+    // border, sampled from the left border of the line above the target (never
+    // from the stray row itself, whose own border may carry the garbage).
     //--------------------------------------------------------------------------
-    wire [8:0] bottom_line = vdp_pal ? 9'd287 : 9'd239;
+    wire vdp_win_y;
+
+    reg [8:0] last_act, cur_last_act;
+    always @(posedge clk) begin
+        if (x_cnt == 11'd16 && vdp_win_y)
+            cur_last_act <= vis_line;
+        if (vs_n_d & ~vsync_n) begin
+            last_act     <= cur_last_act - 1'd1;  // window leads picture by 1
+            cur_last_act <= 9'd0;
+        end
+    end
 
     reg [23:0] border_rgb;
     always @(posedge clk) begin
-        if (x_cnt == 11'd8 && vis_line != bottom_line)
+        if (x_cnt == 11'd8 && vis_line != last_act)
             border_rgb <= {{vdp_r, vdp_r[5:4]},
                            {vdp_g, vdp_g[5:4]},
                            {vdp_b, vdp_b[5:4]}};
     end
 
-    wire bottom_hide = hide_bottom & (vis_line == bottom_line);
+    wire bottom_hide = hide_bottom & (vis_line == last_act) & (last_act != 9'd0);
 
     assign R = diag_on ? diag_rgb[23:16] : bottom_hide ? border_rgb[23:16] : {vdp_r, vdp_r[5:4]};
     assign G = diag_on ? diag_rgb[15:8]  : bottom_hide ? border_rgb[15:8]  : {vdp_g, vdp_g[5:4]};
