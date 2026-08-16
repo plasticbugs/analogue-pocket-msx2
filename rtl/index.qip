@@ -15,11 +15,13 @@ set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "slots.sv"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "tape.sv"]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "joy2ps2.sv"]
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "osk_overlay.v"]
 
 set_global_assignment -name MIF_FILE           [file join $::quartus(qip_path) "rom/cbios_main_msx2.mif"]
 set_global_assignment -name MIF_FILE           [file join $::quartus(qip_path) "rom/cbios_logo_msx2.mif"]
 set_global_assignment -name MIF_FILE           [file join $::quartus(qip_path) "rom/cbios_sub.mif"]
 set_global_assignment -name MIF_FILE           [file join $::quartus(qip_path) "rom/vy0010.mif"]
+set_global_assignment -name MIF_FILE           [file join $::quartus(qip_path) "rom/osk_panel.mif"]
 
 set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "sha1.v"]
 set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) "mapper_db.v"]

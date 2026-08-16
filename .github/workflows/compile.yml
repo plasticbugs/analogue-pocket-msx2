@@ -7,7 +7,7 @@ name: Compile Core
 on:
   workflow_dispatch:
   push:
-    branches: [main, master, msx2]
+    branches: [main, master, msx2, osk]
     tags: ["v*"]
 
 jobs:

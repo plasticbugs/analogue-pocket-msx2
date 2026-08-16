@@ -50,6 +50,7 @@ module msx2
         output        vsync_n,
         output        video_de,
         input         vdp_pal,
+        input         osk_chord,
         // Audio
         output [15:0] audio,
         // Keyboard
@@ -503,9 +504,37 @@ module msx2
     // it tracks the fetch line, one scan line ahead of the picture.
     wire vdp_win_y;
 
-    assign R = diag_on ? diag_rgb[23:16] : {vdp_r, vdp_r[5:4]};
-    assign G = diag_on ? diag_rgb[15:8]  : {vdp_g, vdp_g[5:4]};
-    assign B = diag_on ? diag_rgb[7:0]   : {vdp_b, vdp_b[5:4]};
+    //--------------------------------------------------------------------------
+    // On-screen keyboard overlay: L+R+Select toggles the keyboard panel,
+    // drawn as white glyphs over the dimmed picture.
+    //--------------------------------------------------------------------------
+    wire [11:0] osk_addr;
+    wire  [7:0] osk_q;
+    wire        osk_act, osk_pix;
+
+    spram #(.addr_width(12), .mem_init_file("rom/osk_panel.mif"), .mem_name("OSKROM")) osk_rom
+    (
+        .clock   ( clk      ),
+        .address ( osk_addr ),
+        .q       ( osk_q    )
+    );
+
+    osk_overlay osk
+    (
+        .clk      ( clk       ),
+        .chord    ( osk_chord ),
+        .vdp_pal  ( vdp_pal   ),
+        .line     ( vis_line  ),
+        .xcnt     ( x_cnt     ),
+        .rom_addr ( osk_addr  ),
+        .rom_q    ( osk_q     ),
+        .active   ( osk_act   ),
+        .pix      ( osk_pix   )
+    );
+
+    assign R = diag_on ? diag_rgb[23:16] : osk_act ? (osk_pix ? 8'hFF : {2'b00, vdp_r}) : {vdp_r, vdp_r[5:4]};
+    assign G = diag_on ? diag_rgb[15:8]  : osk_act ? (osk_pix ? 8'hFF : {2'b00, vdp_g}) : {vdp_g, vdp_g[5:4]};
+    assign B = diag_on ? diag_rgb[7:0]   : osk_act ? (osk_pix ? 8'hFF : {2'b00, vdp_b}) : {vdp_b, vdp_b[5:4]};
 
     //--------------------------------------------------------------------------
     // Display enable trim

@@ -956,6 +956,7 @@ module core_top
         .reset_i        ( msx_reset | reset_sw_s ), // [i]
 
         .vdp_pal        ( dip_sw1[0]             ), // [i]
+        .osk_chord      ( p1_btn_l1 & p1_btn_r1 & p1_select ), // [i]
 
         .R              ( core_r               ), // [o]
         .G              ( core_g               ), // [o]
