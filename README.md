@@ -4,20 +4,80 @@ An MSX2 home computer core for the Analogue Pocket (openFPGA), built on the
 [OpenGateware MSX core](https://github.com/opengateware/computer-msx) and
 upgraded from MSX1 to MSX2.
 
+Metal Gear 2, SD Snatcher, Space Manbow, Aleste 2 and the rest of the MSX2
+library, in your pocket — with automatic mapper detection, so nearly every
+game loads with zero configuration.
+
+## Installing
+
+1. Download the latest `msx2-pocket-sdcard.zip` from
+   [Releases](https://github.com/plasticbugs/analogue-pocket-msx2/releases).
+2. Unzip it onto the root of your Pocket's SD card, merging folders and
+   overwriting when asked.
+3. Put cartridge `.rom` images in `Assets/msx2/common/`.
+4. On the Pocket: **openFPGA → MSX2**, then load a game through
+   **Core Settings → Load Slot A**.
+
+Updater apps such as [Pocket Sync](https://github.com/neil-morrison44/pocket-sync)
+can also install and update the core directly from this repository's
+releases.
+
+Upgrading from a release before v0.4.0: the core moved from
+`Cores/boogermann.msx` to `Cores/plasticbugs.msx2` and its assets from
+`Assets/msx/common` to `Assets/msx2/common`. Move your ROM/BIOS files to the
+new assets folder and delete the old `Cores/boogermann.msx`,
+`Platforms/msx.json`, and `Platforms/_images/msx.bin`.
+
 ## Features
 
 - **V9938 VDP** (ESE-VDP implementation) with 128 kB VRAM — all MSX2 screen
   modes including 512-pixel and bitmap modes, sprites mode 2, and the VDP
   command engine
-- **C-BIOS MSX2** system ROMs embedded in the bitstream — no BIOS files
-  needed on the SD card (cartridge games boot directly; C-BIOS contains no
-  BASIC and no disk support)
-- 64 kB memory-mapper RAM (slot 3-2, I/O 0xFC–0xFF) and RP-5C01 RTC
-- Two cartridge slots loaded from SDRAM (up to 4 MB per slot) with
-  auto-detected MegaROM mappers: Konami, Konami SCC (with SCC sound),
-  ASCII8 (+8 kB SRAM), ASCII16 (+2 kB SRAM), Game Master 2, R-Type, linear
-- PSG (AY-3-8910), keyboard via USB dock or joypad-to-key mapping
+- **13 cartridge mappers with automatic detection**: known dumps are
+  identified by SHA-1 against a database distilled from the
+  [openMSX Software Database](https://openmsx.org/) (3,200+ entries);
+  unknown dumps fall back to signature analysis. Konami, Konami SCC (with
+  SCC sound), ASCII8/16 (+SRAM variants), Game Master 2, R-Type,
+  Cross Blaim, Harry Fox, Super Lode Runner, generic 8 kB, linear
+- **Two cartridge slots** loaded from SDRAM (up to 4 MB per slot)
+- **256 kB memory-mapper RAM** — enough for SD Snatcher and other
+  128 kB+ disk conversions — plus RP-5C01 RTC
+- **C-BIOS MSX2** system ROMs embedded in the bitstream — cartridge games
+  boot with no BIOS files at all
+- **Bring-your-own-BIOS**: load a real machine's BIOS at runtime for
+  software that needs BASIC or disk routines (see below)
+- **Joy2Key**: d-pad types the cursor keys; Y/X/L/R/Select/Start map to
+  your choice of keyboard keys (SPACE, RETURN, SHIFT, letters, digits,
+  function keys...) from the Core Settings menus — enough to play
+  keyboard-driven games without a keyboard
+- PSG (AY-3-8910), keyboard via USB dock
 - NTSC/PAL output with automatic scaler preset switching
+
+## Using a real MSX BIOS
+
+C-BIOS (the built-in open-source BIOS) runs cartridge games perfectly but
+contains no BASIC and no disk routines. Games that need them — including
+`.dsk` images converted to ROM with dsk2rom — need a real machine's BIOS,
+which you supply yourself:
+
+1. Place two dumps from the **same machine** in `Assets/msx2/common/`:
+   - the 32 kB main BIOS+BASIC ROM
+   - the matching 16 kB MSX2 sub (ext) ROM
+2. In Core Settings, use **Load Main BIOS**, then **Load MSX2 Sub ROM**.
+3. Load your game as usual.
+
+Loading only one of the pair, or mixing machines, will hang the core.
+Quitting and relaunching the core always restores C-BIOS. No copyrighted
+BIOS is included in this repository or its releases.
+
+## Known limitations
+
+- No floppy drive emulation yet — convert `.dsk` software to `.rom` with
+  [dsk2rom](https://github.com/joyrex2001/dsk2rom) (multi-disk software
+  needs each disk converted separately)
+- Cartridge SRAM is not yet persisted to the SD card, so battery-backed
+  saves (Xanadu, Hydlide 2, Game Master 2...) don't survive a power cycle
+- No MSX-MUSIC/OPLL yet
 
 ## Building
 
@@ -31,8 +91,7 @@ Or push to GitHub — `.github/workflows/compile.yml` compiles the core with
 Quartus 18.1 and uploads the ready-to-use SD card package as an artifact.
 
 The build output in `release/pocket/` is copied onto the root of the
-Pocket's SD card. Load cartridge `.rom` images through the core's
-Slot A / Slot B menu.
+Pocket's SD card.
 
 ## License
 
@@ -67,6 +126,9 @@ Notes:
 - The V9938 sources were taken from the
   [MiSTer MSX core](https://github.com/MiSTer-devel/MSX_MiSTer), which
   packages the ESE MSX-System 3 / OneChipMSX (OCM) codebase.
+- The mapper database (`Assets/msx2/common/mapperdb.bin`) is distilled
+  from the openMSX Software Database (SHA-1 prefixes and mapper types
+  only; no game data).
 
 ## Acknowledgements
 
@@ -76,4 +138,6 @@ Notes:
 - Marcus Andrade (boogermann) and the OpenGateware project for the Pocket
   framework and the original Pocket port
 - The C-BIOS Association for a freely redistributable MSX BIOS
+- The openMSX project for the Software Database that powers mapper
+  auto-detection
 - The MiSTer project for maintaining the OCM-derived MSX core
