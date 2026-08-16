@@ -72,6 +72,8 @@ BIOS is included in this repository or its releases.
 
 ## Known limitations
 
+- Rarely, a stray line of pixels appears at the bottom of the screen
+  after loading a game; restarting the core sometimes clears it
 - No floppy drive emulation yet — convert `.dsk` software to `.rom` with
   [dsk2rom](https://github.com/joyrex2001/dsk2rom) (multi-disk software
   needs each disk converted separately)
