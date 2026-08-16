@@ -109,6 +109,41 @@ def main():
         for y in range(H):
             print(''.join('#' if v else '.' for v in img[y]))
 
+    if '--png' in sys.argv:
+        import struct
+        import zlib
+        scale = 4
+        fg, bg = (255, 255, 255), (24, 28, 48)  # overlay look: white on dim
+        rows = bytearray()
+        for y in range(H):
+            row = bytearray()
+            for x in range(W):
+                row += bytes(fg if img[y][x] else bg)
+            for _ in range(scale):
+                rows += b'\x00' + bytes(v for px in [row] for v in px)
+        # widen horizontally
+        out_rows = bytearray()
+        for y in range(H * scale):
+            src = rows[y * (W * 3 + 1):(y + 1) * (W * 3 + 1)][1:]
+            line = bytearray()
+            for x in range(W):
+                line += src[x * 3:x * 3 + 3] * scale
+            out_rows += b'\x00' + line
+
+        def chunk(tag, payload):
+            return (struct.pack('>I', len(payload)) + tag + payload +
+                    struct.pack('>I', zlib.crc32(tag + payload)))
+
+        png = (b'\x89PNG\r\n\x1a\n'
+               + chunk(b'IHDR', struct.pack('>IIBBBBB', W * scale, H * scale,
+                                            8, 2, 0, 0, 0))
+               + chunk(b'IDAT', zlib.compress(bytes(out_rows), 9))
+               + chunk(b'IEND', b''))
+        path = os.path.join(root, 'docs/osk_panel.png')
+        with open(path, 'wb') as f:
+            f.write(png)
+        print(f"wrote {path} ({W*scale}x{H*scale})")
+
 
 if __name__ == "__main__":
     main()
