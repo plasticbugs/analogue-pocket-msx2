@@ -7,7 +7,8 @@
 // On-screen keyboard overlay, milestone 1: draw the pre-rendered keyboard
 // panel (tools/make_osk_panel.py -> rtl/rom/osk_panel.mif) over the picture,
 // toggled by a controller chord. The panel is 240x72 at one bit per pixel,
-// addressed in MSX-pixel space (two output samples per pixel), centred
+// addressed in panel-pixel space (four machine clocks per panel pixel:
+// the DE line is ~1192 clk21 = 596 output samples at 10.74MHz), centred
 // horizontally and sitting above the bottom border.
 //
 // The bitmap ROM lives outside this module (spram in msx2.sv) so the logic
@@ -49,7 +50,7 @@ module osk_overlay
     //--------------------------------------------------------------------------
     wire [8:0] y0 = vdp_pal ? 9'd192 : 9'd156;
 
-    wire [8:0] px = xcnt[9:1];          // 2 samples per MSX pixel
+    wire [8:0] px = xcnt[10:2];         // 4 clk21 per panel pixel
     wire [8:0] rx = px - X0;
     wire [8:0] ry = line - y0;
     wire       inp = (px >= X0) && (rx < PANEL_W) &&
