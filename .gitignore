@@ -67,3 +67,6 @@ cr_ie_info.json
 a.out
 .build
 _tmp
+
+# macOS
+.DS_Store

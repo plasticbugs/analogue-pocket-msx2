@@ -11,7 +11,7 @@ Real machine BIOS (optional, else
 C-BIOS is used):
 * Main BIOS: 32kB main+BASIC
   dump (msx2.rom, bios)
-* MSX2 Sub ROM: matching 16kB
+* Sub (ext) ROM: matching 16kB
   ext/sub dump
 * Load BOTH from the SAME
   machine or it will hang

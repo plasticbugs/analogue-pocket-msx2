@@ -63,7 +63,7 @@ which you supply yourself:
 1. Place two dumps from the **same machine** in `Assets/msx2/common/`:
    - the 32 kB main BIOS+BASIC ROM
    - the matching 16 kB MSX2 sub (ext) ROM
-2. In Core Settings, use **Load Main BIOS**, then **Load MSX2 Sub ROM**.
+2. In Core Settings, use **Load Main BIOS**, then **Load Sub (ext) ROM**.
 3. Load your game as usual.
 
 Loading only one of the pair, or mixing machines, will hang the core.

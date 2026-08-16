@@ -96,7 +96,7 @@ begin
     begin
         if rising_edge(clk21m) and reset = '0' then
             if clkena = '1' then
-                write(l, conv_integer(signed(wave)));
+                if wave(14) = '1' then write(l, conv_integer(wave) - 32768); else write(l, conv_integer(wave)); end if;
                 writeline(f, l);
             end if;
         end if;

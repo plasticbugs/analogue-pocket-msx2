@@ -10,3 +10,12 @@ tb_edges
 frame.txt
 frame5.txt
 vdpdump.txt
+tb_scc
+tb_scc_mg2
+tb_framedump_game
+tb_winy
+scc_work/
+winy.txt
+frame_game.txt
+scc_out.txt
+scc_mg2_out.txt

@@ -23,6 +23,9 @@ architecture sim of tb_cpuvdp is
 
     -- request strobe (mirrors msx2.sv)
     signal iack : std_logic := '0';
+    signal r_mreq_n, r_iorq_n, r_rd_n, r_wr_n, r_m1_n : std_logic := '1';
+    signal r_a : std_logic_vector(15 downto 0) := (others => '1');
+    signal r_d : std_logic_vector(7 downto 0) := (others => '1');
     signal req  : std_logic;
     signal io_en, vdp_sel, vdp_req : std_logic;
 
@@ -61,15 +64,23 @@ architecture sim of tb_cpuvdp is
     signal vram1 : ram_t := (others => (others => '0'));
 
     -- Z80 test program at 0x0000
-    type rom_t is array (0 to 63) of std_logic_vector(7 downto 0);
+    type rom_t is array (0 to 127) of std_logic_vector(7 downto 0);
     constant prog : rom_t := (
         x"3E", x"00", x"D3", x"99", x"3E", x"80", x"D3", x"99",
         x"3E", x"40", x"D3", x"99", x"3E", x"81", x"D3", x"99",
         x"3E", x"00", x"D3", x"99", x"3E", x"82", x"D3", x"99",
         x"3E", x"80", x"D3", x"99", x"3E", x"83", x"D3", x"99",
         x"3E", x"01", x"D3", x"99", x"3E", x"84", x"D3", x"99",
-        x"3E", x"F1", x"D3", x"99", x"3E", x"87", x"D3", x"99",
+        x"3E", x"10", x"D3", x"99", x"3E", x"87", x"D3", x"99",
+        x"3E", x"00", x"D3", x"99", x"3E", x"90", x"D3", x"99",
+        x"3E", x"00", x"D3", x"9A", x"3E", x"00", x"D3", x"9A",
+        x"3E", x"77", x"D3", x"9A", x"3E", x"07", x"D3", x"9A",
         x"18", x"FE", x"00", x"00", x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00", x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00", x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00", x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00", x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00", x"00", x"00", x"00", x"00",
         x"00", x"00", x"00", x"00", x"00", x"00", x"00", x"00");
 
     -- CPU clock enables: 3.58MHz from 21.477MHz (divide by 6)
@@ -98,33 +109,40 @@ begin
         BUSAK_n => open, A => a, DI => d_to_cpu, DO => d_from_cpu);
 
     -- request strobe, exactly as msx2.sv builds it
-    req <= '1' when ((mreq_n = '0' or iorq_n = '0') and (rd_n = '0' or wr_n = '0')
-                     and iack = '0') else '0';
+    -- registered CPU bus, matching msx2.sv
+    req <= '1' when ((r_mreq_n = '0' or r_iorq_n = '0') and
+                     (r_rd_n = '0' or r_wr_n = '0') and iack = '0') else '0';
     process(clk21m)
     begin
         if rising_edge(clk21m) then
             if reset = '1' then
-                iack <= '0';
-            elsif (mreq_n = '1' and iorq_n = '1') then
-                iack <= '0';
-            elsif req = '1' then
-                iack <= '1';
+                r_mreq_n <= '1'; r_iorq_n <= '1'; r_rd_n <= '1'; r_wr_n <= '1';
+                r_m1_n <= '1'; r_a <= x"FFFF"; r_d <= x"FF"; iack <= '0';
+            else
+                r_mreq_n <= mreq_n; r_iorq_n <= iorq_n;
+                r_rd_n <= rd_n; r_wr_n <= wr_n; r_m1_n <= m1_n;
+                r_a <= a; r_d <= d_from_cpu;
+                if (r_mreq_n = '1' and r_iorq_n = '1') then
+                    iack <= '0';
+                elsif req = '1' then
+                    iack <= '1';
+                end if;
             end if;
         end if;
     end process;
 
     pramdbi <= vram1_q & vram0_q;
-    vdp_wrt <= not wr_n;
+    vdp_wrt <= not r_wr_n;
 
-    io_en   <= '1' when (iorq_n = '0' and m1_n = '1') else '0';
-    vdp_sel <= '1' when (io_en = '1' and a(7 downto 2) = "100110") else '0';
+    io_en   <= '1' when (r_iorq_n = '0' and r_m1_n = '1') else '0';
+    vdp_sel <= '1' when (io_en = '1' and r_a(7 downto 2) = "100110") else '0';
     vdp_req <= req and vdp_sel;
 
     U_VDP: entity work.VDP
     port map (
         CLK21M => clk21m, RESET => reset,
-        REQ => vdp_req, ACK => vdp_ack, WRT => vdp_wrt, ADR => a,
-        DBI => d_from_vdp, DBO => d_from_cpu, INT_N => vdp_int_n,
+        REQ => vdp_req, ACK => vdp_ack, WRT => vdp_wrt, ADR => r_a,
+        DBI => d_from_vdp, DBO => r_d, INT_N => vdp_int_n,
         PRAMOE_N => pramoe_n, PRAMWE_N => pramwe_n, PRAMADR => pramadr,
         PRAMDBI => pramdbi, PRAMDBO => pramdbo,
         VDPSPEEDMODE => '0', RATIOMODE => "000", CENTERYJK_R25_N => '1',
@@ -159,9 +177,10 @@ begin
     end process;
 
     -- CPU bus: ROM in page 0, stack RAM at 0xFF00, VDP on I/O reads
-    d_to_cpu <= prog(to_integer(unsigned(a(5 downto 0)))) when (mreq_n = '0' and rd_n = '0' and a < x"0040") else
+    d_to_cpu <= prog(to_integer(unsigned(a(6 downto 0)))) when (mreq_n = '0' and rd_n = '0' and a < x"0080") else
                 stack(to_integer(unsigned(a(7 downto 0)))) when (mreq_n = '0' and rd_n = '0' and a(15 downto 8) = x"FF") else
-                d_from_vdp when (vdp_sel = '1' and rd_n = '0') else
+                d_from_vdp when (iorq_n = '0' and m1_n = '1' and rd_n = '0'
+                                 and a(7 downto 2) = "100110") else
                 x"FF";
 
     capture: process(clk21m)
@@ -202,6 +221,41 @@ begin
         end if;
     end process;
 
+    fetchlog: process(clk21m)
+        variable hs_prev : std_logic := '1';
+        variable vs_prev : std_logic := '1';
+        variable ln  : integer := 0;
+        variable fld : integer := 0;
+        variable c   : integer := 0;
+        variable run : integer := 0;
+        variable prev: std_logic_vector(17 downto 0) := (others => '0');
+        variable px  : std_logic_vector(17 downto 0);
+        variable rpt : integer := 0;
+    begin
+        if rising_edge(clk21m) and reset = '0' then
+            if fld = 3 and ln = 120 and de = '1' then
+                px := vr & vg & vb;
+                c := c + 1;
+                if c > 300 then                 -- well inside the active area
+                    if c = 301 then prev := px; run := 1;
+                    elsif px = prev then run := run + 1;
+                    else
+                        if rpt < 14 then
+                            report "pixel held " & integer'image(run) &
+                                   " clk21 cycles (colour " &
+                                   integer'image(to_integer(unsigned(prev(17 downto 12)))) & ")";
+                            rpt := rpt + 1;
+                        end if;
+                        run := 1; prev := px;
+                    end if;
+                end if;
+            end if;
+            if hs_prev = '1' and hs_n = '0' then ln := ln + 1; c := 0; end if;
+            if vs_prev = '1' and vs_n = '0' then fld := fld + 1; ln := 0; end if;
+            hs_prev := hs_n; vs_prev := vs_n;
+        end if;
+    end process;
+
     scan: process(clk21m)
         variable phase   : integer := 0;
         variable hs_prev : std_logic := '1';
@@ -238,10 +292,12 @@ begin
                             last_ln := de_line;
                         end if;
                         if de_line = 120 then
-                            report "mid display line: " & integer'image(col) &
-                                   " samples, " & integer'image(nonblack) &
-                                   " lit, " & integer'image(transits) &
-                                   " colour changes";
+                            report "mid line: " & integer'image(col) & " samples, " &
+                                   integer'image(nonblack) & " lit, " &
+                                   integer'image(transits) & " changes; RGB=" &
+                                   integer'image(to_integer(unsigned(vr))) & "/" &
+                                   integer'image(to_integer(unsigned(vg))) & "/" &
+                                   integer'image(to_integer(unsigned(vb)));
                         end if;
                     end if;
                 end if;

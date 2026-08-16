@@ -34,7 +34,7 @@
             },
             {
                 "id": 5,
-                "name": "MSX2 Sub ROM (ext)",
+                "name": "Sub (ext) ROM",
                 "required": false,
                 "parameters": "0x109",
                 "extensions": [
