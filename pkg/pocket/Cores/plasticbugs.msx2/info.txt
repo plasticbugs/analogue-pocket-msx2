@@ -18,9 +18,6 @@ C-BIOS is used):
 * Quit and relaunch the core
   to restore C-BIOS
 
-Hide Bottom Row paints over the
-stray line some titles show.
-
 Joy2Key (enable in Core Settings):
 * D-pad types the cursor keys
 * Map Y/X/L/R/Select/Start to

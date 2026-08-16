@@ -50,7 +50,6 @@ module msx2
         output        vsync_n,
         output        video_de,
         input         vdp_pal,
-        input         hide_bottom,
         // Audio
         output [15:0] audio,
         // Keyboard
@@ -496,43 +495,17 @@ module msx2
         end
     end
 
-    //--------------------------------------------------------------------------
-    // Hide-bottom-row option: some titles leave one row of stray pixels on the
-    // last line of the VDP's active display area. That row's position depends
-    // on the screen mode (192- or 212-line) and the R18 vertical adjust, so it
-    // is not computed but observed: PVIDEO_WINDOW_Y tracks the VDP's fetch
-    // line, which leads the displayed picture by exactly one scan line (GHDL
-    // measurement, sim/tb_winy.vhd: window lines 27..218 vs picture content
-    // 26..217), so the row painted next frame is the last window line minus
-    // one. The paint colour is the
-    // border, sampled from the left border of the line above the target (never
-    // from the stray row itself, whose own border may carry the garbage).
-    //--------------------------------------------------------------------------
+    // The VDP's vertical window (PVIDEO_WINDOW_Y) is exported and was once
+    // used to paint over the last active display line; the stray bottom line
+    // some sessions show turned out to be a Pocket scaler capture-phase
+    // artifact (intermittent, cleared by a core restart), which no in-picture
+    // repaint can address. sim/tb_winy.vhd documents the signal's timing:
+    // it tracks the fetch line, one scan line ahead of the picture.
     wire vdp_win_y;
 
-    reg [8:0] last_act, cur_last_act;
-    always @(posedge clk) begin
-        if (x_cnt == 11'd16 && vdp_win_y)
-            cur_last_act <= vis_line;
-        if (vs_n_d & ~vsync_n) begin
-            last_act     <= cur_last_act - 1'd1;  // window leads picture by 1
-            cur_last_act <= 9'd0;
-        end
-    end
-
-    reg [23:0] border_rgb;
-    always @(posedge clk) begin
-        if (x_cnt == 11'd8 && vis_line != last_act)
-            border_rgb <= {{vdp_r, vdp_r[5:4]},
-                           {vdp_g, vdp_g[5:4]},
-                           {vdp_b, vdp_b[5:4]}};
-    end
-
-    wire bottom_hide = hide_bottom & (vis_line == last_act) & (last_act != 9'd0);
-
-    assign R = diag_on ? diag_rgb[23:16] : bottom_hide ? border_rgb[23:16] : {vdp_r, vdp_r[5:4]};
-    assign G = diag_on ? diag_rgb[15:8]  : bottom_hide ? border_rgb[15:8]  : {vdp_g, vdp_g[5:4]};
-    assign B = diag_on ? diag_rgb[7:0]   : bottom_hide ? border_rgb[7:0]   : {vdp_b, vdp_b[5:4]};
+    assign R = diag_on ? diag_rgb[23:16] : {vdp_r, vdp_r[5:4]};
+    assign G = diag_on ? diag_rgb[15:8]  : {vdp_g, vdp_g[5:4]};
+    assign B = diag_on ? diag_rgb[7:0]   : {vdp_b, vdp_b[5:4]};
 
     //--------------------------------------------------------------------------
     // Display enable trim
