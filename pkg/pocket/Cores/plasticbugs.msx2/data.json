@@ -33,16 +33,6 @@
                 "address": "0x00000000"
             },
             {
-                "id": 3,
-                "name": "Logo ROM (C-BIOS)",
-                "required": false,
-                "parameters": "0x109",
-                "extensions": [
-                    "rom"
-                ],
-                "address": "0x00000000"
-            },
-            {
                 "id": 5,
                 "name": "MSX2 Sub ROM (ext)",
                 "required": false,

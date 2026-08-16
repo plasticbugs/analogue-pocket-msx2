@@ -50,6 +50,7 @@ module msx2
         output        vsync_n,
         output        video_de,
         input         vdp_pal,
+        input         hide_bottom,
         // Audio
         output [15:0] audio,
         // Keyboard
@@ -494,9 +495,27 @@ module msx2
         end
     end
 
-    assign R = diag_on ? diag_rgb[23:16] : {vdp_r, vdp_r[5:4]};
-    assign G = diag_on ? diag_rgb[15:8]  : {vdp_g, vdp_g[5:4]};
-    assign B = diag_on ? diag_rgb[7:0]   : {vdp_b, vdp_b[5:4]};
+    //--------------------------------------------------------------------------
+    // Hide-bottom-row option: some titles leave one row of stray pixels on the
+    // last emitted line. When enabled, that row is painted with the border
+    // colour, sampled from the left border of the line above it (never from
+    // the stray row itself, whose own border may carry the garbage).
+    //--------------------------------------------------------------------------
+    wire [8:0] bottom_line = vdp_pal ? 9'd287 : 9'd239;
+
+    reg [23:0] border_rgb;
+    always @(posedge clk) begin
+        if (x_cnt == 11'd8 && vis_line != bottom_line)
+            border_rgb <= {{vdp_r, vdp_r[5:4]},
+                           {vdp_g, vdp_g[5:4]},
+                           {vdp_b, vdp_b[5:4]}};
+    end
+
+    wire bottom_hide = hide_bottom & (vis_line == bottom_line);
+
+    assign R = diag_on ? diag_rgb[23:16] : bottom_hide ? border_rgb[23:16] : {vdp_r, vdp_r[5:4]};
+    assign G = diag_on ? diag_rgb[15:8]  : bottom_hide ? border_rgb[15:8]  : {vdp_g, vdp_g[5:4]};
+    assign B = diag_on ? diag_rgb[7:0]   : bottom_hide ? border_rgb[7:0]   : {vdp_b, vdp_b[5:4]};
 
     //--------------------------------------------------------------------------
     // Display enable trim
