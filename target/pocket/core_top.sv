@@ -928,10 +928,14 @@ module core_top
 
     assign video_preset = pal_mode ? 3'd1 : 3'd0;
 
+    wire        osk_visible;
     wire  [5:0] joy0    = { p1_btn_b, p1_btn_a, p1_up, p1_down, p1_left, p1_right };
     wire  [5:0] joy1    = { p2_btn_b, p2_btn_a, p2_up, p2_down, p2_left, p2_right };
 
-    wire  [9:0] joy_key = { p1_up, p1_down, p1_left, p1_right,
+    // the on-screen keyboard owns the d-pad while visible: keep Joy2Key from
+    // typing arrow keys into the machine as the cursor moves
+    wire  [9:0] joy_key = { p1_up    & ~osk_visible, p1_down  & ~osk_visible,
+                            p1_left  & ~osk_visible, p1_right & ~osk_visible,
                             p1_start, p1_select, p1_btn_r1, p1_btn_l1, p1_btn_x, p1_btn_y };
     // six 6-bit key indices: Y/X/L/R/Select in mod_sw[29:0] (0xF2000000),
     // Start in dip_sw bits [17:12] (0xF1000000, above the mapper/PAL bits)
@@ -957,6 +961,7 @@ module core_top
 
         .vdp_pal        ( dip_sw1[0]             ), // [i]
         .osk_chord      ( p1_btn_l1 & p1_btn_r1 & p1_select ), // [i]
+        .osk_visible    ( osk_visible            ), // [o]
 
         .R              ( core_r               ), // [o]
         .G              ( core_g               ), // [o]

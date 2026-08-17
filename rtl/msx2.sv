@@ -51,6 +51,7 @@ module msx2
         output        video_de,
         input         vdp_pal,
         input         osk_chord,
+        output        osk_visible,
         // Audio
         output [15:0] audio,
         // Keyboard
@@ -510,7 +511,8 @@ module msx2
     //--------------------------------------------------------------------------
     wire [11:0] osk_addr;
     wire  [7:0] osk_q;
-    wire        osk_act, osk_pix;
+    wire        osk_act, osk_pix, osk_dark, osk_vis;
+    wire        osk_frame = vs_n_d & ~vsync_n;
 
     spram #(.addr_width(12), .mem_init_file("rom/osk_panel.mif"), .mem_name("OSKROM")) osk_rom
     (
@@ -523,18 +525,27 @@ module msx2
     (
         .clk      ( clk       ),
         .chord    ( osk_chord ),
+        .frame    ( osk_frame ),
+        .up       ( joy0[3]   ),
+        .down     ( joy0[2]   ),
+        .left     ( joy0[1]   ),
+        .right    ( joy0[0]   ),
         .vdp_pal  ( vdp_pal   ),
         .line     ( vis_line  ),
         .xcnt     ( x_cnt     ),
         .rom_addr ( osk_addr  ),
         .rom_q    ( osk_q     ),
+        .visible  ( osk_vis   ),
         .active   ( osk_act   ),
-        .pix      ( osk_pix   )
+        .pix      ( osk_pix   ),
+        .dark     ( osk_dark  )
     );
 
-    assign R = diag_on ? diag_rgb[23:16] : osk_act ? (osk_pix ? 8'hFF : {2'b00, vdp_r}) : {vdp_r, vdp_r[5:4]};
-    assign G = diag_on ? diag_rgb[15:8]  : osk_act ? (osk_pix ? 8'hFF : {2'b00, vdp_g}) : {vdp_g, vdp_g[5:4]};
-    assign B = diag_on ? diag_rgb[7:0]   : osk_act ? (osk_pix ? 8'hFF : {2'b00, vdp_b}) : {vdp_b, vdp_b[5:4]};
+    assign osk_visible = osk_vis;
+
+    assign R = diag_on ? diag_rgb[23:16] : osk_act ? (osk_pix ? 8'hFF : osk_dark ? 8'h00 : {2'b00, vdp_r}) : {vdp_r, vdp_r[5:4]};
+    assign G = diag_on ? diag_rgb[15:8]  : osk_act ? (osk_pix ? 8'hFF : osk_dark ? 8'h00 : {2'b00, vdp_g}) : {vdp_g, vdp_g[5:4]};
+    assign B = diag_on ? diag_rgb[7:0]   : osk_act ? (osk_pix ? 8'hFF : osk_dark ? 8'h00 : {2'b00, vdp_b}) : {vdp_b, vdp_b[5:4]};
 
     //--------------------------------------------------------------------------
     // Display enable trim
@@ -791,7 +802,11 @@ module msx2
     // Sound AY-3-8910
     //--------------------------------------------------------------------------
     wire [7:0] d_from_psg, psg_ioa, psg_iob;
-    wire [5:0] joy_a = psg_iob[4] ? 6'b111111 : {~joy0[5], ~joy0[4], ~joy0[0], ~joy0[1], ~joy0[2], ~joy0[3]};
+    // while the on-screen keyboard is up the d-pad steers its cursor, so the
+    // game only sees the buttons
+    wire [5:0] joy0_g = osk_vis ? {joy0[5:4], 4'b0000} : joy0;
+
+    wire [5:0] joy_a = psg_iob[4] ? 6'b111111 : {~joy0_g[5], ~joy0_g[4], ~joy0_g[0], ~joy0_g[1], ~joy0_g[2], ~joy0_g[3]};
     wire [5:0] joy_b = psg_iob[5] ? 6'b111111 : {~joy1[5], ~joy1[4], ~joy1[0], ~joy1[1], ~joy1[2], ~joy1[3]};
     wire [5:0] joyA  = joy_a & {psg_iob[0], psg_iob[1], 4'b1111};
     wire [5:0] joyB  = joy_b & {psg_iob[2], psg_iob[3], 4'b1111};
