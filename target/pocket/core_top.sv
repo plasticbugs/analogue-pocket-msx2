@@ -961,6 +961,7 @@ module core_top
 
         .vdp_pal        ( dip_sw1[0]             ), // [i]
         .osk_chord      ( p1_btn_l1 & p1_btn_r1 & p1_select ), // [i]
+        .osk_chord2     ( p1_btn_l1 & p1_btn_r1 & p1_start  ), // [i]
         .osk_visible    ( osk_visible            ), // [o]
 
         .R              ( core_r               ), // [o]

@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Render the on-screen keyboard panel bitmap for the OSK overlay.
 
-Produces two 240x72 1bpp pages: the base legends and, at byte offset
-4096, the shift-lock page where digits and punctuation show their
-shifted characters (12 columns x 6 rows of 20x12 key cells, outlined
-boxes with centred 3x5 labels). Output is a Quartus MIF (for the spram
+Produces four 240x72 1bpp pages of key legends on a 15-column grid:
+Japanese base, Japanese shifted (+4096), International base (+8192),
+International shifted (+12288). The two layouts share the same key
+geometry and scancodes -- both address the same key-matrix positions,
+and the loaded BIOS decides what each position types -- so the pages
+differ only in printed legends. Output is a Quartus MIF (for the spram
 init) and a plain hex file (for iverilog testbenches), 30 bytes per
-row, MSB = leftmost pixel, 8192 bytes total for the BRAM's 13-bit
-address space.
+row, MSB = leftmost pixel, 16384 bytes for the BRAM's 14-bit address
+space.
 
 Usage: tools/make_osk_panel.py [--preview]
 Writes rtl/rom/osk_panel.mif and rtl/rom/osk_panel.hex.
@@ -16,7 +18,7 @@ import os
 import sys
 
 W, H = 240, 72
-CELL_W, CELL_H = 20, 12
+CELL_W, CELL_H = 16, 12
 
 FONT = {  # 3x5, rows top-down, 3 bits each (MSB left)
     'A': "010 101 111 101 101", 'B': "110 101 110 101 110",
@@ -54,36 +56,65 @@ FONT = {  # 3x5, rows top-down, 3 bits each (MSB left)
     ':': "000 010 000 010 000", '<': "001 010 100 010 001",
     '>': "100 010 001 010 100", '?': "110 001 010 000 010",
     '|': "010 010 010 010 010", '~': "000 001 111 100 000",
+    'Y#': "101 010 111 010 111",
 }
 
-# shifted legends (international layout, matching keyboard.vhd's map);
-# letters and named keys keep their labels -- caps state implies their case
-ALT = {
+# shifted legends per layout: what the matrix positions actually type
+# under the matching BIOS. Letters and named keys keep their labels --
+# caps state implies their case. ('Y#' is the yen-sign glyph; JIS 0 has
+# no shifted character.)
+ALT_JP = {
+    '1': '!', '2': '"', '3': '#', '4': '$', '5': '%', '6': '&',
+    '7': "'", '8': '(', '9': ')', '-': '=', '^': '~', 'Y#': '|',
+    '@': '`', '[': '{', ';': '+', ':': '*', ']': '}',
+    ',': '<', '.': '>', '/': '?',
+}
+ALT_INTL = {
     '1': '!', '2': '@', '3': '#', '4': '$', '5': '%', '6': '^',
     '7': '&', '8': '*', '9': '(', '0': ')', '-': '_', '=': '+',
-    '[': '{', ']': '}', ';': ':', "'": '"', ',': '<', '.': '>',
-    '/': '?', '\\': '|', '`': '~',
+    '\\': '|', '[': '{', ']': '}', ';': ':', "'": '"', '`': '~',
+    ',': '<', '.': '>', '/': '?',
 }
 
-# (label, row, col, cell-span). Chord keys later index this same table.
-LAYOUT = [
+# (label, row, col, cell-span) on a 15-column grid. The two layouts
+# share every key position; only legends differ.
+LAYOUT_JP = [
     ("ESC",0,0,1),("F1",0,1,1),("F2",0,2,1),("F3",0,3,1),("F4",0,4,1),
-    ("F5",0,5,1),("STOP",0,6,1),("HOME",0,7,1),("INS",0,8,1),("DEL",0,9,1),
-    ("TAB",0,10,1),("BS",0,11,1),
+    ("F5",0,5,1),("STOP",0,6,2),("HOME",0,8,2),("INS",0,10,2),("DEL",0,12,2),
+    ("TAB",0,14,1),
+    ("1",1,0,1),("2",1,1,1),("3",1,2,1),("4",1,3,1),("5",1,4,1),("6",1,5,1),
+    ("7",1,6,1),("8",1,7,1),("9",1,8,1),("0",1,9,1),("-",1,10,1),("^",1,11,1),
+    ("Y#",1,12,1),("BS",1,13,2),
+    ("Q",2,0,1),("W",2,1,1),("E",2,2,1),("R",2,3,1),("T",2,4,1),("Y",2,5,1),
+    ("U",2,6,1),("I",2,7,1),("O",2,8,1),("P",2,9,1),("@",2,10,2),("[",2,12,3),
+    ("A",3,0,1),("S",3,1,1),("D",3,2,1),("F",3,3,1),("G",3,4,1),("H",3,5,1),
+    ("J",3,6,1),("K",3,7,1),("L",3,8,1),(";",3,9,1),(":",3,10,1),("]",3,11,1),
+    ("RET",3,12,3),
+    ("SHF",4,0,2),("Z",4,2,1),("X",4,3,1),("C",4,4,1),("V",4,5,1),("B",4,6,1),
+    ("N",4,7,1),("M",4,8,1),(",",4,9,1),(".",4,10,1),("/",4,11,1),
+    ("_",4,12,1),("SHF",4,13,2),
+    ("CAP",5,0,2),("CTL",5,2,2),("GRP",5,4,2),("SPACE",5,6,6),("COD",5,12,3),
+]
+
+LAYOUT_INTL = [
+    ("ESC",0,0,1),("F1",0,1,1),("F2",0,2,1),("F3",0,3,1),("F4",0,4,1),
+    ("F5",0,5,1),("STOP",0,6,2),("HOME",0,8,2),("INS",0,10,2),("DEL",0,12,2),
+    ("TAB",0,14,1),
     ("1",1,0,1),("2",1,1,1),("3",1,2,1),("4",1,3,1),("5",1,4,1),("6",1,5,1),
     ("7",1,6,1),("8",1,7,1),("9",1,8,1),("0",1,9,1),("-",1,10,1),("=",1,11,1),
+    ("\\",1,12,1),("BS",1,13,2),
     ("Q",2,0,1),("W",2,1,1),("E",2,2,1),("R",2,3,1),("T",2,4,1),("Y",2,5,1),
-    ("U",2,6,1),("I",2,7,1),("O",2,8,1),("P",2,9,1),("[",2,10,1),("]",2,11,1),
+    ("U",2,6,1),("I",2,7,1),("O",2,8,1),("P",2,9,1),("[",2,10,2),("]",2,12,3),
     ("A",3,0,1),("S",3,1,1),("D",3,2,1),("F",3,3,1),("G",3,4,1),("H",3,5,1),
-    ("J",3,6,1),("K",3,7,1),("L",3,8,1),(";",3,9,1),("'",3,10,1),("RET",3,11,1),
-    ("SHF",4,0,1),("Z",4,1,1),("X",4,2,1),("C",4,3,1),("V",4,4,1),("B",4,5,1),
-    ("N",4,6,1),("M",4,7,1),(",",4,8,1),(".",4,9,1),("/",4,10,1),("SHF",4,11,1),
-    ("CAP",5,0,1),("CTL",5,1,1),("GRP",5,2,1),("SPACE",5,3,5),("COD",5,8,1),
-    ("@",5,9,1),("\\",5,10,1),("`",5,11,1),
+    ("J",3,6,1),("K",3,7,1),("L",3,8,1),(";",3,9,1),("'",3,10,1),("`",3,11,1),
+    ("RET",3,12,3),
+    ("SHF",4,0,2),("Z",4,2,1),("X",4,3,1),("C",4,4,1),("V",4,5,1),("B",4,6,1),
+    ("N",4,7,1),("M",4,8,1),(",",4,9,1),(".",4,10,1),("/",4,11,1),("SHF",4,12,3),
+    ("CAP",5,0,2),("CTL",5,2,2),("GRP",5,4,2),("SPACE",5,6,6),("COD",5,12,3),
 ]
 
 
-def render_page(alt):
+def render_page(layout, alts, alt):
     img = [[0] * W for _ in range(H)]
 
     def putc(ch, x, y):
@@ -94,18 +125,19 @@ def render_page(alt):
                 if bits[c] == '1' and 0 <= x + c < W and 0 <= y + r < H:
                     img[y + r][x + c] = 1
 
-    for label, row, col, span in LAYOUT:
+    for label, row, col, span in layout:
         if alt:
-            label = ALT.get(label, label)
+            label = alts.get(label, label)
         x0, y0 = col * CELL_W, row * CELL_H
         w, h = span * CELL_W, CELL_H
         for x in range(x0, x0 + w):
             img[y0][x] = img[y0 + h - 1][x] = 1
         for y in range(y0, y0 + h):
             img[y][x0] = img[y][x0 + w - 1] = 1
-        tw = 4 * len(label) - 1
+        glyphs = [label] if label in FONT else list(label)
+        tw = 4 * len(glyphs) - 1
         tx, ty = x0 + (w - tw) // 2, y0 + (h - 5) // 2
-        for i, ch in enumerate(label):
+        for i, ch in enumerate(glyphs):
             putc(ch, tx + i * 4, ty)
     return img
 
@@ -122,23 +154,26 @@ def page_bytes(img):
 
 
 def main():
-    img = render_page(False)
-    img_alt = render_page(True)
-    data = page_bytes(img) + page_bytes(img_alt)
+    pages = [render_page(LAYOUT_JP, ALT_JP, False),
+             render_page(LAYOUT_JP, ALT_JP, True),
+             render_page(LAYOUT_INTL, ALT_INTL, False),
+             render_page(LAYOUT_INTL, ALT_INTL, True)]
+    img, img_alt = pages[0], pages[1]
+    data = b''.join(bytes(page_bytes(p)) for p in pages)
 
     root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
     with open(os.path.join(root, 'rtl/rom/osk_panel.hex'), 'w') as f:
         f.write('\n'.join(f'{b:02x}' for b in data) + '\n')
     with open(os.path.join(root, 'rtl/rom/osk_panel.mif'), 'w') as f:
-        f.write("DEPTH = 8192;\nWIDTH = 8;\nADDRESS_RADIX = HEX;\n"
+        f.write("DEPTH = 16384;\nWIDTH = 8;\nADDRESS_RADIX = HEX;\n"
                 "DATA_RADIX = HEX;\nCONTENT\nBEGIN\n")
         for a, b in enumerate(data):
             f.write(f"{a:03X} : {b:02X};\n")
         f.write("END;\n")
-    print(f"osk_panel: 2 pages of {W}x{H}, {len(data)} bytes")
+    print(f"osk_panel: 4 pages of {W}x{H}, {len(data)} bytes")
 
     if '--preview' in sys.argv:
-        for page in (img, img_alt):
+        for page in pages:
             for y in range(H):
                 print(''.join('#' if v else '.' for v in page[y]))
             print()
@@ -148,7 +183,10 @@ def main():
         import zlib
         scale = 4
         fg, bg = (255, 255, 255), (24, 28, 48)  # overlay look: white on dim
-        stack = img + [[0] * W for _ in range(4)] + img_alt
+        stack = []
+        for pg in pages:
+            stack = stack + pg + [[0] * W for _ in range(4)]
+        stack = stack[:-4]
         SH = len(stack)
         rows = bytearray()
         for y in range(SH):

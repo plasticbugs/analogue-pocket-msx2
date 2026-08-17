@@ -51,6 +51,7 @@ module msx2
         output        video_de,
         input         vdp_pal,
         input         osk_chord,
+        input         osk_chord2,
         output        osk_visible,
         // Audio
         output [15:0] audio,
@@ -509,13 +510,13 @@ module msx2
     // On-screen keyboard overlay: L+R+Select toggles the keyboard panel,
     // drawn as white glyphs over the dimmed picture.
     //--------------------------------------------------------------------------
-    wire [12:0] osk_addr;
+    wire [13:0] osk_addr;
     wire  [7:0] osk_q;
     wire        osk_act, osk_pix, osk_dark, osk_vis;
     wire [10:0] osk_key;
     wire        osk_frame = vs_n_d & ~vsync_n;
 
-    spram #(.addr_width(13), .mem_init_file("rom/osk_panel.mif"), .mem_name("OSKROM")) osk_rom
+    spram #(.addr_width(14), .mem_init_file("rom/osk_panel.mif"), .mem_name("OSKROM")) osk_rom
     (
         .clock   ( clk      ),
         .address ( osk_addr ),
@@ -524,8 +525,9 @@ module msx2
 
     osk_overlay osk
     (
-        .clk      ( clk       ),
-        .chord    ( osk_chord ),
+        .clk      ( clk        ),
+        .chord    ( osk_chord  ),
+        .chord2   ( osk_chord2 ),
         .frame    ( osk_frame ),
         .up       ( joy0[3]   ),
         .down     ( joy0[2]   ),
