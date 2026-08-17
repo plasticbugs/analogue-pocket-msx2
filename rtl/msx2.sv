@@ -512,6 +512,7 @@ module msx2
     wire [11:0] osk_addr;
     wire  [7:0] osk_q;
     wire        osk_act, osk_pix, osk_dark, osk_vis;
+    wire [10:0] osk_key;
     wire        osk_frame = vs_n_d & ~vsync_n;
 
     spram #(.addr_width(12), .mem_init_file("rom/osk_panel.mif"), .mem_name("OSKROM")) osk_rom
@@ -530,11 +531,13 @@ module msx2
         .down     ( joy0[2]   ),
         .left     ( joy0[1]   ),
         .right    ( joy0[0]   ),
+        .press    ( joy0[5] | joy0[4] ),
         .vdp_pal  ( vdp_pal   ),
         .line     ( vis_line  ),
         .xcnt     ( x_cnt     ),
         .rom_addr ( osk_addr  ),
         .rom_q    ( osk_q     ),
+        .key_ev   ( osk_key   ),
         .visible  ( osk_vis   ),
         .active   ( osk_act   ),
         .pix      ( osk_pix   ),
@@ -793,7 +796,7 @@ module msx2
     (
         .reset_n_i  ( ~reset         ),
         .clk_i      ( clk            ),
-        .ps2_code_i ( ps2_key        ),
+        .ps2_code_i ( ps2_key | osk_key ),
         .kb_addr_i  ( ppi_out_c[3:0] ),
         .kb_data_o  ( d_from_kb      )
     );
@@ -802,9 +805,9 @@ module msx2
     // Sound AY-3-8910
     //--------------------------------------------------------------------------
     wire [7:0] d_from_psg, psg_ioa, psg_iob;
-    // while the on-screen keyboard is up the d-pad steers its cursor, so the
-    // game only sees the buttons
-    wire [5:0] joy0_g = osk_vis ? {joy0[5:4], 4'b0000} : joy0;
+    // while the on-screen keyboard is up it owns the whole pad: d-pad steers
+    // the cursor and A/B type, so the game sees nothing
+    wire [5:0] joy0_g = osk_vis ? 6'b000000 : joy0;
 
     wire [5:0] joy_a = psg_iob[4] ? 6'b111111 : {~joy0_g[5], ~joy0_g[4], ~joy0_g[0], ~joy0_g[1], ~joy0_g[2], ~joy0_g[3]};
     wire [5:0] joy_b = psg_iob[5] ? 6'b111111 : {~joy1[5], ~joy1[4], ~joy1[0], ~joy1[1], ~joy1[2], ~joy1[3]};

@@ -33,12 +33,14 @@ module osk_overlay
         input             down,
         input             left,
         input             right,
+        input             press,     // A or B: type the highlighted key
         input             vdp_pal,
         input       [8:0] line,      // visible-line counter
         input      [10:0] xcnt,      // machine-clock counter within the DE line
         output     [11:0] rom_addr,
         input       [7:0] rom_q,
-        output            visible,   // panel is up: host masks d-pad from game
+        output reg [10:0] key_ev = 11'd0,  // PS/2 event stream, OR-merged by host
+        output            visible,   // panel is up: host masks the pad from game
         output            active,    // overlay owns this pixel
         output            pix,       // 1 = white pixel
         output            dark       // 1 = black pixel (highlighted glyph)
@@ -105,6 +107,128 @@ module osk_overlay
     end
 
     //--------------------------------------------------------------------------
+    // Key press injection: on an A/B press edge, emit one PS/2 make event for
+    // the highlighted key, hold it three frames, then the break. One event
+    // per press -- holding the button does not repeat. Event protocol matches
+    // joy2ps2: [10] strobe (consumers react to its change), [9] pressed,
+    // [8] extended, [7:0] scancode; all-zeros when idle.
+    //
+    // Scancodes follow rtl/keyboard.vhd's map (checked against it key by
+    // key). The '@' key emits the '['-position code: '@' is a dedicated key
+    // only on Japanese-layout machines, which is where BASIC -- the reason
+    // this keyboard exists -- actually runs; C-BIOS types '['.
+    //--------------------------------------------------------------------------
+    function [8:0] osk_sc(input [2:0] row, input [3:0] col);
+        case ({row, col})
+            {3'd0, 4'd0}: osk_sc = 9'h076;  // ESC
+            {3'd0, 4'd1}: osk_sc = 9'h005;  // F1
+            {3'd0, 4'd2}: osk_sc = 9'h006;  // F2
+            {3'd0, 4'd3}: osk_sc = 9'h004;  // F3
+            {3'd0, 4'd4}: osk_sc = 9'h00C;  // F4
+            {3'd0, 4'd5}: osk_sc = 9'h003;  // F5
+            {3'd0, 4'd6}: osk_sc = 9'h17C;  // STOP
+            {3'd0, 4'd7}: osk_sc = 9'h16C;  // HOME
+            {3'd0, 4'd8}: osk_sc = 9'h170;  // INS
+            {3'd0, 4'd9}: osk_sc = 9'h171;  // DEL
+            {3'd0, 4'd10}: osk_sc = 9'h00D; // TAB
+            {3'd0, 4'd11}: osk_sc = 9'h066; // BS
+            {3'd1, 4'd0}: osk_sc = 9'h016;  // 1
+            {3'd1, 4'd1}: osk_sc = 9'h01E;  // 2
+            {3'd1, 4'd2}: osk_sc = 9'h026;  // 3
+            {3'd1, 4'd3}: osk_sc = 9'h025;  // 4
+            {3'd1, 4'd4}: osk_sc = 9'h02E;  // 5
+            {3'd1, 4'd5}: osk_sc = 9'h036;  // 6
+            {3'd1, 4'd6}: osk_sc = 9'h03D;  // 7
+            {3'd1, 4'd7}: osk_sc = 9'h03E;  // 8
+            {3'd1, 4'd8}: osk_sc = 9'h046;  // 9
+            {3'd1, 4'd9}: osk_sc = 9'h045;  // 0
+            {3'd1, 4'd10}: osk_sc = 9'h04E; // -
+            {3'd1, 4'd11}: osk_sc = 9'h055; // =
+            {3'd2, 4'd0}: osk_sc = 9'h015;  // Q
+            {3'd2, 4'd1}: osk_sc = 9'h01D;  // W
+            {3'd2, 4'd2}: osk_sc = 9'h024;  // E
+            {3'd2, 4'd3}: osk_sc = 9'h02D;  // R
+            {3'd2, 4'd4}: osk_sc = 9'h02C;  // T
+            {3'd2, 4'd5}: osk_sc = 9'h035;  // Y
+            {3'd2, 4'd6}: osk_sc = 9'h03C;  // U
+            {3'd2, 4'd7}: osk_sc = 9'h043;  // I
+            {3'd2, 4'd8}: osk_sc = 9'h044;  // O
+            {3'd2, 4'd9}: osk_sc = 9'h04D;  // P
+            {3'd2, 4'd10}: osk_sc = 9'h054; // [
+            {3'd2, 4'd11}: osk_sc = 9'h05B; // ]
+            {3'd3, 4'd0}: osk_sc = 9'h01C;  // A
+            {3'd3, 4'd1}: osk_sc = 9'h01B;  // S
+            {3'd3, 4'd2}: osk_sc = 9'h023;  // D
+            {3'd3, 4'd3}: osk_sc = 9'h02B;  // F
+            {3'd3, 4'd4}: osk_sc = 9'h034;  // G
+            {3'd3, 4'd5}: osk_sc = 9'h033;  // H
+            {3'd3, 4'd6}: osk_sc = 9'h03B;  // J
+            {3'd3, 4'd7}: osk_sc = 9'h042;  // K
+            {3'd3, 4'd8}: osk_sc = 9'h04B;  // L
+            {3'd3, 4'd9}: osk_sc = 9'h04C;  // ;
+            {3'd3, 4'd10}: osk_sc = 9'h052; // '
+            {3'd3, 4'd11}: osk_sc = 9'h05A; // RET
+            {3'd4, 4'd0}: osk_sc = 9'h012;  // SHF
+            {3'd4, 4'd1}: osk_sc = 9'h01A;  // Z
+            {3'd4, 4'd2}: osk_sc = 9'h022;  // X
+            {3'd4, 4'd3}: osk_sc = 9'h021;  // C
+            {3'd4, 4'd4}: osk_sc = 9'h02A;  // V
+            {3'd4, 4'd5}: osk_sc = 9'h032;  // B
+            {3'd4, 4'd6}: osk_sc = 9'h031;  // N
+            {3'd4, 4'd7}: osk_sc = 9'h03A;  // M
+            {3'd4, 4'd8}: osk_sc = 9'h041;  // ,
+            {3'd4, 4'd9}: osk_sc = 9'h049;  // .
+            {3'd4, 4'd10}: osk_sc = 9'h04A; // /
+            {3'd4, 4'd11}: osk_sc = 9'h012; // SHF
+            {3'd5, 4'd0}: osk_sc = 9'h058;  // CAP
+            {3'd5, 4'd1}: osk_sc = 9'h014;  // CTL
+            {3'd5, 4'd2}: osk_sc = 9'h111;  // GRP
+            {3'd5, 4'd3}, {3'd5, 4'd4}, {3'd5, 4'd5},
+            {3'd5, 4'd6}, {3'd5, 4'd7}: osk_sc = 9'h029;  // SPACE
+            {3'd5, 4'd8}: osk_sc = 9'h009;  // COD
+            {3'd5, 4'd9}: osk_sc = 9'h054;  // @ (see note above)
+            {3'd5, 4'd10}: osk_sc = 9'h05D; // backslash
+            {3'd5, 4'd11}: osk_sc = 9'h00E; // backtick
+            default: osk_sc = 9'h000;
+        endcase
+    endfunction
+
+    localparam K_IDLE = 2'd0, K_MAKE = 2'd1, K_BRK = 2'd2;
+
+    reg [1:0] kstate  = K_IDLE;
+    reg [1:0] kcnt    = 2'd0;
+    reg       press_d = 1'b0;
+
+    wire [8:0] cur_sc = osk_sc(cur_row, cur_col);
+    wire       typing = (kstate != K_IDLE);
+
+    always @(posedge clk) begin
+        press_d <= press;
+        case (kstate)
+            K_IDLE: begin
+                if (en & press & ~press_d & (cur_sc != 9'd0)) begin
+                    key_ev <= {1'b1, 1'b1, cur_sc};
+                    kstate <= K_MAKE;
+                    kcnt   <= 2'd0;
+                end
+            end
+            K_MAKE: if (frame) begin
+                kcnt <= kcnt + 2'd1;
+                if (kcnt == 2'd2) begin
+                    key_ev <= {2'b00, key_ev[8:0]};   // strobe falls: break
+                    kstate <= K_BRK;
+                    kcnt   <= 2'd0;
+                end
+            end
+            K_BRK: if (frame) begin
+                key_ev <= 11'd0;                      // no strobe change: idle
+                kstate <= K_IDLE;
+            end
+            default: kstate <= K_IDLE;
+        endcase
+    end
+
+    //--------------------------------------------------------------------------
     // Panel window in panel-pixel coordinates
     //--------------------------------------------------------------------------
     wire [8:0] y0 = vdp_pal ? 9'd192 : 9'd156;
@@ -139,9 +263,13 @@ module osk_overlay
 
     wire rom_bit = rom_q[3'd7 - bit_d];
 
+    // while a keypress is being injected the inversion is suppressed, so the
+    // highlighted key visibly flashes for the make+break window
+    wire hl_on = hl_d & ~typing;
+
     assign visible = en;
     assign active  = en & inp_d;
-    assign pix     = rom_bit ^ hl_d;    // highlight inverts the cell
-    assign dark    = rom_bit & hl_d;    // glyph inside the highlight is black
+    assign pix     = rom_bit ^ hl_on;   // highlight inverts the cell
+    assign dark    = rom_bit & hl_on;   // glyph inside the highlight is black
 
 endmodule
