@@ -113,7 +113,7 @@ retains its own copyright and license, preserved in the source headers:
 | JT49 PSG | `modules/sound-jt49/` | © Jose Tejada (@topapate) | GPL-3.0 |
 | jt8255 PPI | `rtl/jt8255.v` | © Jose Tejada (@topapate) | GPL-3.0 |
 | C-BIOS system ROMs | `rtl/rom/cbios_*.mif` | © the C-BIOS Association | 2-clause BSD |
-| MSX2 additions in this repo | `rtl/msx2.sv` and related changes | © 2026 contributors | GPL-3.0-or-later |
+| MSX2 additions in this repo | `rtl/msx2.sv` and related changes | Scott Moschella (@plasticbugs) | GPL-3.0-or-later |
 
 Notes:
 
