@@ -46,6 +46,9 @@ new assets folder and delete the old `Cores/boogermann.msx`,
   boot with no BIOS files at all
 - **Bring-your-own-BIOS**: load a real machine's BIOS at runtime for
   software that needs BASIC or disk routines (see below)
+- **On-screen keyboard**: the full MSX keyboard drawn over the game,
+  driven by the controller — type in BASIC or any keyboard-driven title
+  without a dock (see below)
 - **Joy2Key**: d-pad types the cursor keys; Y/X/L/R/Select/Start map to
   your choice of keyboard keys (SPACE, RETURN, SHIFT, letters, digits,
   function keys...) from the Core Settings menus — enough to play
@@ -69,6 +72,31 @@ which you supply yourself:
 Loading only one of the pair, or mixing machines, will hang the core.
 Quitting and relaunching the core always restores C-BIOS. No copyrighted
 BIOS is included in this repository or its releases.
+
+## On-screen keyboard
+
+Press **L + R + Select** together to bring up the keyboard over the
+running machine; the same chord dismisses it. While it is up, the game
+is paused from the pad's point of view — all buttons belong to the
+keyboard.
+
+- **D-pad** moves the key highlight (it wraps at the edges, and holding
+  a direction auto-repeats)
+- **A or B** presses the highlighted key — one keystroke per press, with
+  the key flashing as it types; holding the button does not repeat
+- **CAP** is a shift-lock: press it once to engage (the key stays lit),
+  again to release. While engaged, letters type uppercase and the digit
+  and punctuation keys type the alternate characters shown on the panel
+- **L + R + Start** opens the keyboard with the **International** key
+  legends instead of the Japanese ones; either chord switches the view
+  in place while the keyboard is up
+
+The two layouts type identically — every key presses the same position
+in the MSX key matrix, and the *loaded BIOS* decides what character that
+position produces. Pick the Japanese view when running a Japanese
+machine's BIOS (the common case for BASIC) and the International view
+under C-BIOS or a European machine's BIOS, so the legends match what
+appears on screen.
 
 ## Known limitations
 
