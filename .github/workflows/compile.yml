@@ -1,13 +1,13 @@
 ################################################################################
 # Compile the MSX2 Pocket core and upload the SD-card package as an artifact.
-# Runs on every push to main/master/msx2 and on manual dispatch.
+# Runs on every push to main and on manual dispatch.
 ################################################################################
 name: Compile Core
 
 on:
   workflow_dispatch:
   push:
-    branches: [main, master, msx2, osk]
+    branches: [main]
     tags: ["v*"]
 
 jobs:
