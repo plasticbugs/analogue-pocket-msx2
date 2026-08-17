@@ -8,7 +8,9 @@
 // (tools/make_osk_panel.py -> rtl/rom/osk_panel.mif) over the picture,
 // toggled by a controller chord, with a d-pad-driven key highlight.
 //
-// The panel is 240x72 at one bit per pixel, addressed in panel-pixel space
+// The panel is two 240x72 pages at one bit per pixel -- base legends and
+// the shift-lock page with shifted digit/punctuation characters, selected
+// by rom_addr[12] -- addressed in panel-pixel space
 // (four machine clocks per panel pixel: the DE line is ~1192 clk21 = 596
 // output samples at 10.74MHz), centred horizontally above the bottom border.
 //
@@ -37,7 +39,7 @@ module osk_overlay
         input             vdp_pal,
         input       [8:0] line,      // visible-line counter
         input      [10:0] xcnt,      // machine-clock counter within the DE line
-        output     [11:0] rom_addr,
+        output     [12:0] rom_addr,
         input       [7:0] rom_q,
         output reg [10:0] key_ev = 11'd0,  // PS/2 event stream, OR-merged by host
         output            visible,   // panel is up: host masks the pad from game
@@ -180,7 +182,7 @@ module osk_overlay
             {3'd4, 4'd9}: osk_sc = 9'h049;  // .
             {3'd4, 4'd10}: osk_sc = 9'h04A; // /
             {3'd4, 4'd11}: osk_sc = 9'h012; // SHF
-            {3'd5, 4'd0}: osk_sc = 9'h058;  // CAP
+            {3'd5, 4'd0}: osk_sc = 9'h012;  // CAP: shift-lock (see FSM)
             {3'd5, 4'd1}: osk_sc = 9'h014;  // CTL
             {3'd5, 4'd2}: osk_sc = 9'h111;  // GRP
             {3'd5, 4'd3}, {3'd5, 4'd4}, {3'd5, 4'd5},
@@ -195,33 +197,58 @@ module osk_overlay
 
     localparam K_IDLE = 2'd0, K_MAKE = 2'd1, K_BRK = 2'd2;
 
-    reg [1:0] kstate  = K_IDLE;
-    reg [1:0] kcnt    = 2'd0;
-    reg       press_d = 1'b0;
+    reg [1:0] kstate     = K_IDLE;
+    reg [1:0] kcnt       = 2'd0;
+    reg       press_d    = 1'b0;
+    reg       shlock     = 1'b0;   // CAP engaged: SHIFT held in the matrix
+    reg       pend_shbrk = 1'b0;   // release SHIFT after a mid-lock dismiss
+    reg       en_d       = 1'b0;
 
-    wire [8:0] cur_sc = osk_sc(cur_row, cur_col);
-    wire       typing = (kstate != K_IDLE);
+    wire       cap_key = (cur_row == 3'd5) && (cur_col == 4'd0);
+    wire [8:0] cur_sc  = osk_sc(cur_row, cur_col);
+    wire       typing  = (kstate != K_IDLE);
 
+    // Every event toggles the strobe with its payload; returning to the
+    // all-zeros idle from a high strobe emits a break of scancode 0, which
+    // maps to nothing in keyboard.vhd -- so a held SHIFT survives the
+    // stream idling between keys.
     always @(posedge clk) begin
         press_d <= press;
+        en_d    <= en;
+        if (en_d & ~en & shlock) begin       // dismissed with the lock on
+            shlock     <= 1'b0;
+            pend_shbrk <= 1'b1;
+        end
         case (kstate)
             K_IDLE: begin
-                if (en & press & ~press_d & (cur_sc != 9'd0)) begin
-                    key_ev <= {1'b1, 1'b1, cur_sc};
-                    kstate <= K_MAKE;
-                    kcnt   <= 2'd0;
+                if (pend_shbrk) begin
+                    key_ev     <= {~key_ev[10], 1'b0, 9'h012};
+                    pend_shbrk <= 1'b0;
+                    kstate     <= K_BRK;
+                end
+                else if (en & press & ~press_d) begin
+                    if (cap_key) begin       // toggle the lock: one shift event
+                        key_ev <= {~key_ev[10], ~shlock, 9'h012};
+                        shlock <= ~shlock;
+                        kstate <= K_BRK;
+                    end
+                    else if (cur_sc != 9'd0) begin
+                        key_ev <= {~key_ev[10], 1'b1, cur_sc};
+                        kstate <= K_MAKE;
+                        kcnt   <= 2'd0;
+                    end
                 end
             end
             K_MAKE: if (frame) begin
                 kcnt <= kcnt + 2'd1;
                 if (kcnt == 2'd2) begin
-                    key_ev <= {2'b00, key_ev[8:0]};   // strobe falls: break
+                    key_ev <= {~key_ev[10], 1'b0, key_ev[8:0]};  // break
                     kstate <= K_BRK;
                     kcnt   <= 2'd0;
                 end
             end
             K_BRK: if (frame) begin
-                key_ev <= 11'd0;                      // no strobe change: idle
+                key_ev <= 11'd0;
                 kstate <= K_IDLE;
             end
             default: kstate <= K_IDLE;
@@ -249,27 +276,31 @@ module osk_overlay
     // ry * 30 = ry*32 - ry*2
     wire [11:0] row_base = {ry[6:0], 5'b00000} - {2'b00, ry[6:0], 1'b0};
 
-    assign rom_addr = row_base + {7'b0, rx[7:3]};
+    assign rom_addr = {shlock, row_base + {7'b0, rx[7:3]}};
+
+    // the CAP key cell stays inverted while the lock is engaged
+    wire in_cap = inp && (rx < 9'd20) && (ry >= 9'd60);
 
     // rom_q is registered in the BRAM: align the bit select and the window
     // flags with data fetched one clock earlier
     reg [2:0] bit_d;
-    reg       inp_d, hl_d;
+    reg       inp_d, hl_d, cap_d;
     always @(posedge clk) begin
         bit_d <= rx[2:0];
         inp_d <= inp;
         hl_d  <= in_hl;
+        cap_d <= in_cap;
     end
 
     wire rom_bit = rom_q[3'd7 - bit_d];
 
     // while a keypress is being injected the inversion is suppressed, so the
     // highlighted key visibly flashes for the make+break window
-    wire hl_on = hl_d & ~typing;
+    wire inv = (hl_d & ~typing) | (shlock & cap_d);
 
     assign visible = en;
     assign active  = en & inp_d;
-    assign pix     = rom_bit ^ hl_on;   // highlight inverts the cell
-    assign dark    = rom_bit & hl_on;   // glyph inside the highlight is black
+    assign pix     = rom_bit ^ inv;     // highlight inverts the cell
+    assign dark    = rom_bit & inv;     // glyph inside the highlight is black
 
 endmodule

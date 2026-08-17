@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Render the on-screen keyboard panel bitmap for the OSK overlay.
 
-Produces a 240x72 1bpp image: 12 columns x 6 rows of 20x12 key cells,
-each key an outlined box with a centred label in a 3x5 font. Output is
-a Quartus MIF (for the spram init) and a plain hex file (for iverilog
-testbenches), 30 bytes per row, MSB = leftmost pixel, padded to 4096
-bytes to match the BRAM's 12-bit address space.
+Produces two 240x72 1bpp pages: the base legends and, at byte offset
+4096, the shift-lock page where digits and punctuation show their
+shifted characters (12 columns x 6 rows of 20x12 key cells, outlined
+boxes with centred 3x5 labels). Output is a Quartus MIF (for the spram
+init) and a plain hex file (for iverilog testbenches), 30 bytes per
+row, MSB = leftmost pixel, 8192 bytes total for the BRAM's 13-bit
+address space.
 
 Usage: tools/make_osk_panel.py [--preview]
 Writes rtl/rom/osk_panel.mif and rtl/rom/osk_panel.hex.
@@ -42,6 +44,25 @@ FONT = {  # 3x5, rows top-down, 3 bits each (MSB left)
     '/': "001 001 010 100 100", '\\': "100 100 010 001 001",
     '`': "100 010 000 000 000", '@': "010 101 111 100 011",
     ' ': "000 000 000 000 000",
+    '!': "010 010 010 000 010", '"': "101 101 000 000 000",
+    '#': "101 111 101 111 101", '$': "011 110 010 011 110",
+    '%': "101 001 010 100 101", '^': "010 101 000 000 000",
+    '&': "010 101 010 101 011", '*': "101 010 111 010 101",
+    '(': "001 010 010 010 001", ')': "100 010 010 010 100",
+    '_': "000 000 000 000 111", '+': "000 010 111 010 000",
+    '{': "001 010 110 010 001", '}': "100 010 011 010 100",
+    ':': "000 010 000 010 000", '<': "001 010 100 010 001",
+    '>': "100 010 001 010 100", '?': "110 001 010 000 010",
+    '|': "010 010 010 010 010", '~': "000 001 111 100 000",
+}
+
+# shifted legends (international layout, matching keyboard.vhd's map);
+# letters and named keys keep their labels -- caps state implies their case
+ALT = {
+    '1': '!', '2': '@', '3': '#', '4': '$', '5': '%', '6': '^',
+    '7': '&', '8': '*', '9': '(', '0': ')', '-': '_', '=': '+',
+    '[': '{', ']': '}', ';': ':', "'": '"', ',': '<', '.': '>',
+    '/': '?', '\\': '|', '`': '~',
 }
 
 # (label, row, col, cell-span). Chord keys later index this same table.
@@ -62,7 +83,7 @@ LAYOUT = [
 ]
 
 
-def main():
+def render_page(alt):
     img = [[0] * W for _ in range(H)]
 
     def putc(ch, x, y):
@@ -74,6 +95,8 @@ def main():
                     img[y + r][x + c] = 1
 
     for label, row, col, span in LAYOUT:
+        if alt:
+            label = ALT.get(label, label)
         x0, y0 = col * CELL_W, row * CELL_H
         w, h = span * CELL_W, CELL_H
         for x in range(x0, x0 + w):
@@ -84,7 +107,10 @@ def main():
         tx, ty = x0 + (w - tw) // 2, y0 + (h - 5) // 2
         for i, ch in enumerate(label):
             putc(ch, tx + i * 4, ty)
+    return img
 
+
+def page_bytes(img):
     data = bytearray()
     for y in range(H):
         for xb in range(W // 8):
@@ -92,38 +118,48 @@ def main():
             for i in range(8):
                 b = (b << 1) | img[y][xb * 8 + i]
             data.append(b)
-    data += b'\0' * (4096 - len(data))
+    return data + b'\0' * (4096 - len(data))
+
+
+def main():
+    img = render_page(False)
+    img_alt = render_page(True)
+    data = page_bytes(img) + page_bytes(img_alt)
 
     root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
     with open(os.path.join(root, 'rtl/rom/osk_panel.hex'), 'w') as f:
         f.write('\n'.join(f'{b:02x}' for b in data) + '\n')
     with open(os.path.join(root, 'rtl/rom/osk_panel.mif'), 'w') as f:
-        f.write("DEPTH = 4096;\nWIDTH = 8;\nADDRESS_RADIX = HEX;\n"
+        f.write("DEPTH = 8192;\nWIDTH = 8;\nADDRESS_RADIX = HEX;\n"
                 "DATA_RADIX = HEX;\nCONTENT\nBEGIN\n")
         for a, b in enumerate(data):
             f.write(f"{a:03X} : {b:02X};\n")
         f.write("END;\n")
-    print(f"osk_panel: {W}x{H}, {W*H//8} bytes used of 4096")
+    print(f"osk_panel: 2 pages of {W}x{H}, {len(data)} bytes")
 
     if '--preview' in sys.argv:
-        for y in range(H):
-            print(''.join('#' if v else '.' for v in img[y]))
+        for page in (img, img_alt):
+            for y in range(H):
+                print(''.join('#' if v else '.' for v in page[y]))
+            print()
 
     if '--png' in sys.argv:
         import struct
         import zlib
         scale = 4
         fg, bg = (255, 255, 255), (24, 28, 48)  # overlay look: white on dim
+        stack = img + [[0] * W for _ in range(4)] + img_alt
+        SH = len(stack)
         rows = bytearray()
-        for y in range(H):
+        for y in range(SH):
             row = bytearray()
             for x in range(W):
-                row += bytes(fg if img[y][x] else bg)
+                row += bytes(fg if stack[y][x] else bg)
             for _ in range(scale):
                 rows += b'\x00' + bytes(v for px in [row] for v in px)
         # widen horizontally
         out_rows = bytearray()
-        for y in range(H * scale):
+        for y in range(SH * scale):
             src = rows[y * (W * 3 + 1):(y + 1) * (W * 3 + 1)][1:]
             line = bytearray()
             for x in range(W):
@@ -135,14 +171,14 @@ def main():
                     struct.pack('>I', zlib.crc32(tag + payload)))
 
         png = (b'\x89PNG\r\n\x1a\n'
-               + chunk(b'IHDR', struct.pack('>IIBBBBB', W * scale, H * scale,
+               + chunk(b'IHDR', struct.pack('>IIBBBBB', W * scale, SH * scale,
                                             8, 2, 0, 0, 0))
                + chunk(b'IDAT', zlib.compress(bytes(out_rows), 9))
                + chunk(b'IEND', b''))
         path = os.path.join(root, 'docs/osk_panel.png')
         with open(path, 'wb') as f:
             f.write(png)
-        print(f"wrote {path} ({W*scale}x{H*scale})")
+        print(f"wrote {path} ({W*scale}x{SH*scale})")
 
 
 if __name__ == "__main__":

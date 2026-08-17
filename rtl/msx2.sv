@@ -509,13 +509,13 @@ module msx2
     // On-screen keyboard overlay: L+R+Select toggles the keyboard panel,
     // drawn as white glyphs over the dimmed picture.
     //--------------------------------------------------------------------------
-    wire [11:0] osk_addr;
+    wire [12:0] osk_addr;
     wire  [7:0] osk_q;
     wire        osk_act, osk_pix, osk_dark, osk_vis;
     wire [10:0] osk_key;
     wire        osk_frame = vs_n_d & ~vsync_n;
 
-    spram #(.addr_width(12), .mem_init_file("rom/osk_panel.mif"), .mem_name("OSKROM")) osk_rom
+    spram #(.addr_width(13), .mem_init_file("rom/osk_panel.mif"), .mem_name("OSKROM")) osk_rom
     (
         .clock   ( clk      ),
         .address ( osk_addr ),
