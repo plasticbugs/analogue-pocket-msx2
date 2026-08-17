@@ -13,10 +13,12 @@ C-BIOS is used):
   dump (msx2.rom, bios)
 * Sub (ext) ROM: matching 16kB
   ext/sub dump
-* Load BOTH from the SAME
-  machine or it will hang
 * Quit and relaunch the core
   to restore C-BIOS
+
+On-screen keyboard:
+* L+R+Select shows/hides it
+* L+R+Start: intl layout
 
 Joy2Key (enable in Core Settings):
 * D-pad types the cursor keys
