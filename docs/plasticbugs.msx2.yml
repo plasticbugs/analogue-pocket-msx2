@@ -1,0 +1,97 @@
+--- !ruby/object:Inventory::Core
+id: plasticbugs.msx2
+repository: !ruby/object:GitHub::Repository
+  name: analogue-pocket-msx2
+  owner: !ruby/object:GitHub::Repository::Owner
+    login: plasticbugs
+  html_url: https://github.com/plasticbugs/analogue-pocket-msx2
+funding:
+releases:
+- !ruby/object:Inventory::Release
+  date: 2026-08-16 19:20:50.000000000 Z
+  download_url: https://github.com/plasticbugs/analogue-pocket-msx2/releases/download/v0.4.0/msx2-pocket-sdcard.zip
+  core: !ruby/object:Analogue::Core
+    metadata: !ruby/object:Analogue::Core::Metadata
+      platform_ids:
+      - msx2
+      shortname: msx2
+      description: MSX2 core by plasticbugs, based on boogermann's MSX core
+      author: plasticbugs
+      url: https://github.com/plasticbugs/analogue-pocket-msx2
+      version: 0.4.0
+      date_release: '2026-08-16'
+    framework: !ruby/object:Analogue::Core::Framework
+      version_required: '1.1'
+      sleep_supported: false
+      dock: !ruby/object:Analogue::Core::Framework::Dock
+        supported: true
+        analog_output: false
+      hardware: !ruby/object:Analogue::Core::Framework::Hardware
+        link_port: false
+  data: !ruby/object:Analogue::Data
+    data_slots:
+    - !ruby/object:Analogue::Data::DataSlot
+      name: Slot A
+      required: false
+      parameters: !ruby/object:Analogue::Data::DataSlot::Parameters
+        core_specific_file: false
+        instance_json: false
+        platform_index: 0
+      filename:
+      extensions:
+      - rom
+    - !ruby/object:Analogue::Data::DataSlot
+      name: Slot B
+      required: false
+      parameters: !ruby/object:Analogue::Data::DataSlot::Parameters
+        core_specific_file: false
+        instance_json: false
+        platform_index: 0
+      filename:
+      extensions:
+      - rom
+    - !ruby/object:Analogue::Data::DataSlot
+      name: Main BIOS
+      required: false
+      parameters: !ruby/object:Analogue::Data::DataSlot::Parameters
+        core_specific_file: false
+        instance_json: false
+        platform_index: 0
+      filename:
+      extensions:
+      - rom
+    - !ruby/object:Analogue::Data::DataSlot
+      name: Sub (ext) ROM
+      required: false
+      parameters: !ruby/object:Analogue::Data::DataSlot::Parameters
+        core_specific_file: false
+        instance_json: false
+        platform_index: 0
+      filename:
+      extensions:
+      - rom
+    - !ruby/object:Analogue::Data::DataSlot
+      name: Mapper DB
+      required: true
+      parameters: !ruby/object:Analogue::Data::DataSlot::Parameters
+        core_specific_file: false
+        instance_json: false
+        platform_index: 0
+      filename: mapperdb.bin
+      extensions:
+      - bin
+  updaters:
+  info: |-
+    MSX2 is the 1985 successor to the MSX home computer standard, defined by
+    ASCII Corporation and Microsoft. It upgraded the platform with the Yamaha
+    V9938 video display processor, 128 KB of video RAM, new bitmap screen
+    modes, and battery-backed clock RAM, while remaining fully backward
+    compatible with MSX1 software.
+    The MSX2 found its greatest success in Japan, where it hosted defining
+    entries in series such as Metal Gear, SD Snatcher, Space Manbow and
+    Aleste before the platform was discontinued.
+    This core embeds the open-source C-BIOS, so cartridge games run with no
+    BIOS files; a real machine's BIOS pair can be loaded at runtime for
+    software that needs BASIC, and an on-screen keyboard (L+R+Select) covers
+    keyboard-driven titles.
+  requires_license: false
