@@ -2,11 +2,9 @@
     "core": {
         "magic": "APF_VER_1",
         "metadata": {
-            "platform_ids": [
-                "msx2"
-            ],
+        "platform_ids": ["msx2","analogizer"],
             "shortname": "msx2",
-            "description": "MSX2 core by plasticbugs, based on boogermann's MSX core",
+            "description": "MSX2 core by plasticbugs, based on boogermann's MSX core + Analogizer adapter support",
             "author": "plasticbugs",
             "url": "https://github.com/plasticbugs/analogue-pocket-msx2",
             "version": "0.5.0",
@@ -22,7 +20,7 @@
             },
             "hardware": {
                 "link_port": false,
-                "cartridge_adapter": -1
+                "cartridge_adapter": 0
             }
         },
         "cores": [

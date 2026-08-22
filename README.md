@@ -160,6 +160,19 @@ Notes:
   from the openMSX Software Database (SHA-1 prefixes and mapper types
   only; no game data).
 
+
+## Analogizer
+
+[Analogizer](https://github.com/RndMnkIII/Analogizer) is a cartridge-slot adapter
+that adds analog video output and SNAC PS/2 keyboard + native game controller support (NES/SNES/DB15 Neogeo), and this core works
+with it. The full story is in [ANALOGIZER.md](ANALOGIZER.md): the video modes,
+which pads work and where the A/B switch has to sit for each one, where the
+config actually lives, and which problems to report here rather than upstream.
+
+Before you plug anything in: the adapter draws its power from the cartridge slot,
+so this core switches that slot on for everybody, adapter or not. Don't leave a
+cartridge in the slot while this core is running.
+
 ## Acknowledgements
 
 - Kunihiko Ohnaka and the ESE Artists' Factory for the ESE MSX-System,
