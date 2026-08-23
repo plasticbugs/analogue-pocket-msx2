@@ -1,4 +1,4 @@
-# MSX2 for Analogue Pocket
+# MSX2 for Analogue Pocket + Analogizer adapter
 
 An MSX2 home computer core for the Analogue Pocket (openFPGA), built on the
 [OpenGateware MSX core](https://github.com/opengateware/computer-msx) and
@@ -171,7 +171,9 @@ config actually lives, and which problems to report here rather than upstream.
 
 Before you plug anything in: the adapter draws its power from the cartridge slot,
 so this core switches that slot on for everybody, adapter or not. Don't leave a
-cartridge in the slot while this core is running.
+cartridge in the slot while this core is running. 
+
+In any case, unless the Analogizer adapter is explicitly enabled via its own configuration file, `'analogizer.bin'`, the cartridge port configuration will remain in its default state, neither reading nor sending any signals.
 
 ## Acknowledgements
 
