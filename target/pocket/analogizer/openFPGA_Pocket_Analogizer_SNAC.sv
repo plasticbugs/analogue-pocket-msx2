@@ -569,7 +569,7 @@ pcengine_game_controller_multitap #(.MASTER_CLK_FREQ(MASTER_CLK_FREQ)) pcegmutit
     //   KDAT = CART_BK0_IN[7]  (bank0[7])
     //=========================================================================
     // debounce ~11-12 us: 2^size/CLK ~ 12us
-    localparam int PS2_DEBOUNCE_SIZE = $clog2(MASTER_CLK_FREQ / 85_000);
+    localparam int PS2_DEBOUNCE_SIZE = $clog2(MASTER_CLK_FREQ / 200_000); //85_000 slow clk keyboards, for fast as the Hewlett Packard try 200_000
 
     ps2_keyboard #(
         .clk_freq              (MASTER_CLK_FREQ),
