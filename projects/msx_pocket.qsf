@@ -63,6 +63,9 @@ set_global_assignment -name QIP_FILE msx_pocket.qip
 set_global_assignment -name SDC_FILE msx_pocket.sdc
 set_global_assignment -name CDF_FILE msx_pocket.cdf
 
+set_global_assignment -name QIP_FILE ../target/pocket/analogizer/analogizer.qip
+set_global_assignment -name SYSTEMVERILOG_FILE ../target/pocket/ps2_to_key.sv
+
 # ==============================================================================
 # Core RTL Assignments
 # ==============================================================================

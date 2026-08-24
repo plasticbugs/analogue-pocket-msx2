@@ -37,6 +37,8 @@ module core_top
          //! ------------------------------------------------------------------------
          //! System Configuration Parameters
          //! ------------------------------------------------------------------------
+         // Analogizer
+        parameter USE_ANALOGIZER = 1,     //! Enable Support for Analogizer
          // Memory
          parameter USE_SDRAM    = 1,       //! Enable SDRAM
          parameter USE_SRAM     = 0,       //! Enable SRAM
@@ -268,7 +270,14 @@ module core_top
          input  wire  [15:0] cont2_trig,
          input  wire  [15:0] cont3_trig,
          input  wire  [15:0] cont4_trig
-     );
+    );
+
+    //Analogizer settings
+    generate
+    if(USE_ANALOGIZER == 1) begin
+    localparam [7:0] ADDRESS_ANALOGIZER_CONFIG = 8'hF7;
+    end
+    endgenerate
 
     // not using the IR port, so turn off both the LED, and
     // disable the receive circuit to save power
@@ -280,6 +289,8 @@ module core_top
 
     // cart is unused, so set all level translators accordingly
     // directions are 0:IN, 1:OUT
+    generate
+    if(USE_ANALOGIZER == 0) begin
     assign cart_tran_bank3         = 8'hzz;
     assign cart_tran_bank3_dir     = 1'b0;
     assign cart_tran_bank2         = 8'hzz;
@@ -293,6 +304,8 @@ module core_top
     assign cart_pin30_pwroff_reset = 1'b0;  // hardware can control this
     assign cart_tran_pin31         = 1'bz;  // input
     assign cart_tran_pin31_dir     = 1'b0;  // input
+    end
+    endgenerate
 
     // link port is input only
     assign port_tran_so      = 1'bz;
@@ -535,22 +548,46 @@ module core_top
     // Synchronize nvm_bridge_rd_data into clk_74a domain before usage
     synch_3 sync_nvm(nvm_bridge_rd_data, nvm_bridge_rd_data_s, clk_74a);
 
+ generate
+    if(USE_ANALOGIZER == 1) begin
+    wire [31:0] analogizer_bridge_rd_data;
+
     always_comb begin
         casex(bridge_addr)
-            32'h10000000: begin bridge_rd_data <= nvm_bridge_rd_data_s; end // HiScore/NVRAM/SRAM Save
-            32'hF0000000: begin bridge_rd_data <= int_bridge_rd_data;   end // Reset
-            32'hF0000010: begin bridge_rd_data <= int_bridge_rd_data;   end // Service Mode Switch
-            32'hF1000000: begin bridge_rd_data <= int_bridge_rd_data;   end // DIP Switches
-            32'hF2000000: begin bridge_rd_data <= int_bridge_rd_data;   end // Modifiers
-            32'hF3000000: begin bridge_rd_data <= int_bridge_rd_data;   end // A/V Filters
-            32'hF4000000: begin bridge_rd_data <= int_bridge_rd_data;   end // Extra DIP Switches
-            32'hF8xxxxxx: begin bridge_rd_data <= cmd_bridge_rd_data;   end // APF Bridge (Reserved)
-            32'hFA000000: begin bridge_rd_data <= int_bridge_rd_data;   end // Status Low  [31:0]
-            32'hFB000000: begin bridge_rd_data <= int_bridge_rd_data;   end // Status High [63:32]
-            32'hFE000000: begin bridge_rd_data <= {28'h0, mapper_info}; end
-            default:      begin bridge_rd_data <= 0;                    end
+            32'h10000000:                      begin bridge_rd_data <= nvm_bridge_rd_data_s;      end // HiScore/NVRAM/SRAM Save
+            32'hF0000000:                      begin bridge_rd_data <= int_bridge_rd_data;        end // Reset
+            32'hF0000010:                      begin bridge_rd_data <= int_bridge_rd_data;        end // Service Mode Switch
+            32'hF1000000:                      begin bridge_rd_data <= int_bridge_rd_data;        end // DIP Switches
+            32'hF2000000:                      begin bridge_rd_data <= int_bridge_rd_data;        end // Modifiers
+            32'hF3000000:                      begin bridge_rd_data <= int_bridge_rd_data;        end // A/V Filters
+            32'hF4000000:                      begin bridge_rd_data <= int_bridge_rd_data;        end // Extra DIP Switches
+            32'hF8xxxxxx:                      begin bridge_rd_data <= cmd_bridge_rd_data;        end // APF Bridge (Reserved)
+            32'hFA000000:                      begin bridge_rd_data <= int_bridge_rd_data;        end // Status Low  [31:0]
+            32'hFB000000:                      begin bridge_rd_data <= int_bridge_rd_data;        end // Status High [63:32]
+            32'hFE000000:                      begin bridge_rd_data <= {29'h0, mapper_info};      end
+            {ADDRESS_ANALOGIZER_CONFIG,24'h0}: begin bridge_rd_data <= analogizer_bridge_rd_data; end // Analogizer
+            default:                           begin bridge_rd_data <= 0;                         end
         endcase
     end
+    end else begin
+    always_comb begin
+        casex(bridge_addr)
+            32'h10000000:                      begin bridge_rd_data <= nvm_bridge_rd_data_s;      end // HiScore/NVRAM/SRAM Save
+            32'hF0000000:                      begin bridge_rd_data <= int_bridge_rd_data;        end // Reset
+            32'hF0000010:                      begin bridge_rd_data <= int_bridge_rd_data;        end // Service Mode Switch
+            32'hF1000000:                      begin bridge_rd_data <= int_bridge_rd_data;        end // DIP Switches
+            32'hF2000000:                      begin bridge_rd_data <= int_bridge_rd_data;        end // Modifiers
+            32'hF3000000:                      begin bridge_rd_data <= int_bridge_rd_data;        end // A/V Filters
+            32'hF4000000:                      begin bridge_rd_data <= int_bridge_rd_data;        end // Extra DIP Switches
+            32'hF8xxxxxx:                      begin bridge_rd_data <= cmd_bridge_rd_data;        end // APF Bridge (Reserved)
+            32'hFA000000:                      begin bridge_rd_data <= int_bridge_rd_data;        end // Status Low  [31:0]
+            32'hFB000000:                      begin bridge_rd_data <= int_bridge_rd_data;        end // Status High [63:32]
+            32'hFE000000:                      begin bridge_rd_data <= {29'h0, mapper_info};      end
+            default:                           begin bridge_rd_data <= 0;                         end
+        endcase
+    end
+    end
+ endgenerate
 
     //! ------------------------------------------------------------------------
     //! Pause Core (Analogue OS Menu/Module Request)
@@ -650,6 +687,7 @@ module core_top
     wire             core_hs, core_hb; // Horizontal Sync/Blank
     wire             core_vs, core_vb; // Vertical Sync/Blank
     wire             core_de;          // Display Enable
+    wire [23:0] pocket_video_rgb;
 
     // The V9938 provides a fixed-size display-enable window (borders included)
     assign core_de = msx_video_de;
@@ -675,7 +713,7 @@ module core_top
         .core_hs                  ( core_hs                  ),
         .core_de                  ( core_de                  ),
         // Output to Display
-        .video_rgb                ( video_rgb                ),
+        .video_rgb                ( pocket_video_rgb         ),
         .video_vs                 ( video_vs                 ),
         .video_hs                 ( video_hs                 ),
         .video_de                 ( video_de                 ),
@@ -692,6 +730,8 @@ module core_top
         .bridge_wr                ( bridge_wr                ), // [i]
         .bridge_wr_data           ( bridge_wr_data           )  // [i]
     );
+
+    assign video_rgb = video_rgb_msx;
 
     //! ------------------------------------------------------------------------
     //! Data I/O
@@ -834,6 +874,7 @@ module core_top
     //! Keyboard
     //! ------------------------------------------------------------------------
     wire [10:0] ps2_key;
+    wire [10:0] ps2_key_general;
 
     usb_keyboard u_usb_kbd
     (
@@ -929,14 +970,29 @@ module core_top
     assign video_preset = pal_mode ? 3'd1 : 3'd0;
 
     wire        osk_visible;
-    wire  [5:0] joy0    = { p1_btn_b, p1_btn_a, p1_up, p1_down, p1_left, p1_right };
-    wire  [5:0] joy1    = { p2_btn_b, p2_btn_a, p2_up, p2_down, p2_left, p2_right };
+    wire  [5:0] joy0;   
+    wire  [5:0] joy1 ;  
+    wire  [9:0] joy_key;
+                            
+    generate
+    if(USE_ANALOGIZER == 0) begin
+        assign joy0    = { p1_btn_b, p1_btn_a, p1_up, p1_down, p1_left, p1_right };
+        assign joy1    = { p2_btn_b, p2_btn_a, p2_up, p2_down, p2_left, p2_right };
+        // the on-screen keyboard owns the pad while visible: keep Joy2Key from
+        // typing mapped keys into the machine as the cursor moves and A/B press
+        assign joy_key = osk_visible ? 10'b0 : { p1_up, p1_down, p1_left, p1_right, p1_start, p1_select, p1_btn_r1, p1_btn_l1, p1_btn_x, p1_btn_y };
+        assign ps2_key_general = ps2_key | ps2_joy;
+    end
+    else begin
+        assign joy0    = { p1_controls[5],p1_controls[4],p1_controls[0],p1_controls[1],p1_controls[2],p1_controls[3]};
+        assign joy1    = { p2_controls[5],p2_controls[4],p2_controls[0],p2_controls[1],p2_controls[2],p2_controls[3]};
+        assign joy_key = osk_visible ? 10'b0 : { p1_controls[0], p1_controls[1], p1_controls[2], p1_controls[3], p1_controls[15],p1_controls[14], p1_controls[9], p1_controls[8], p1_controls[6], p1_controls[7]};
+        assign ps2_key_general = ps2_key | ps2_joy | snac_ps2_key;
+    end
+endgenerate                           
 
-    // the on-screen keyboard owns the pad while visible: keep Joy2Key from
-    // typing mapped keys into the machine as the cursor moves and A/B press
-    wire  [9:0] joy_key = osk_visible ? 10'b0 :
-                          { p1_up, p1_down, p1_left, p1_right,
-                            p1_start, p1_select, p1_btn_r1, p1_btn_l1, p1_btn_x, p1_btn_y };
+
+
     // six 6-bit key indices: Y/X/L/R/Select in mod_sw[29:0] (0xF2000000),
     // Start in dip_sw bits [17:12] (0xF1000000, above the mapper/PAL bits)
     wire [35:0] key_map = { dip_sw2[1:0], dip_sw1[7:4],
@@ -960,8 +1016,8 @@ module core_top
         .reset_i        ( msx_reset | reset_sw_s ), // [i]
 
         .vdp_pal        ( dip_sw1[0]             ), // [i]
-        .osk_chord      ( p1_btn_l1 & p1_btn_r1 & p1_select ), // [i]
-        .osk_chord2     ( p1_btn_l1 & p1_btn_r1 & p1_start  ), // [i]
+        .osk_chord      (  p1_controls[8] & p1_controls[9] & p1_controls[14] ), // [i] //L1+R1+SELECT
+        .osk_chord2     (  p1_controls[8] & p1_controls[9] & p1_controls[15] ), // [i] //L1+R1+START
         .osk_visible    ( osk_visible            ), // [o]
 
         .R              ( core_r               ), // [o]
@@ -973,7 +1029,7 @@ module core_top
 
         .audio          ( core_snd_l           ), // [o]
 
-        .ps2_key        ( ps2_key | ps2_joy    ), // [i]
+        .ps2_key        (  ps2_key_general     ), // [i]
 
         .joy0           ( joy0                 ), // [i]
         .joy1           ( joy1                 ), // [i]
@@ -1124,5 +1180,252 @@ module core_top
     //     .play           ( ~CAS_motor     ),
     //     .rewind         ( CAS_rewind     )
     // );
+
+/*[ANALOGIZER_HOOK_BEGIN]*/
+    generate
+    if(USE_ANALOGIZER == 1) begin
+	 logic [7:0]  snac_ps2_code;
+    logic        snac_ps2_code_new;
+    logic [10:0] snac_ps2_key;
+
+    ps2_to_key #(
+    .STROBE_TOGGLE (1'b0),
+    .HANDLE_PAUSE  (1'b1)
+    ) u_ps2_to_key (
+        .clk          (clk_sys),
+        .reset        (msx_reset | reset_sw),
+        .enable       (analogizer_ena),
+        .ps2_code_new (snac_ps2_code_new),
+        .ps2_code     (snac_ps2_code),
+        .ps2_key      (snac_ps2_key)
+    );
+	 
+    wire analogizer_ena;
+    wire [3:0] analogizer_video_type;
+    wire [4:0] snac_game_cont_type;
+    wire [3:0] snac_cont_assignment;
+    wire       pocket_blank_screen;
+
+    //create aditional switch to blank Pocket screen.
+    wire [23:0] video_rgb_msx;
+    assign video_rgb_msx = (pocket_blank_screen && analogizer_ena) ? 24'h000000: pocket_video_rgb;
+
+    //switch between Analogizer SNAC and Pocket Controls for P1-P2
+    wire [15:0] p1_btn; 
+    wire [15:0] p2_btn;
+    wire [31:0] p1_joy; 
+    wire [31:0] p2_joy;
+    reg [31:0] p1_joystick;
+    reg [31:0] p2_joystick;
+    reg  [15:0] p1_controls;
+    reg  [15:0] p2_controls;
+
+    wire snac_is_analog = (snac_game_cont_type == 5'h12) || (snac_game_cont_type == 5'h13);
+
+    //! Player 1 ---------------------------------------------------------------------------
+    reg snac_p1_up, snac_p1_down, snac_p1_left, snac_p1_right;
+    wire snac_p1_up_analog, snac_p1_down_analog, snac_p1_left_analog, snac_p1_right_analog;
+    //using left analog joypad
+    assign snac_p1_up_analog    = (p1_joy[15:8] < 8'h40) ? 1'b1 : 1'b0; //analog range UP 0x00 Idle 0x7F DOWN 0xFF, DEADZONE +- 0x15
+    assign snac_p1_down_analog  = (p1_joy[15:8] > 8'hC0) ? 1'b1 : 1'b0; 
+    assign snac_p1_left_analog  = (p1_joy[7:0]  < 8'h40) ? 1'b1 : 1'b0; //analog range LEFT 0x00 Idle 0x7F RIGHT 0xFF, DEADZONE +- 0x15
+    assign snac_p1_right_analog = (p1_joy[7:0]  > 8'hC0) ? 1'b1 : 1'b0;
+
+    always @(posedge clk_74a) begin
+        snac_p1_up    <= (snac_is_analog) ? snac_p1_up_analog    : p1_btn[0];
+        snac_p1_down  <= (snac_is_analog) ? snac_p1_down_analog  : p1_btn[1];
+        snac_p1_left  <= (snac_is_analog) ? snac_p1_left_analog  : p1_btn[2];
+        snac_p1_right <= (snac_is_analog) ? snac_p1_right_analog : p1_btn[3];
+    end
+    //! Player 2 ---------------------------------------------------------------------------
+    reg snac_p2_up, snac_p2_down, snac_p2_left, snac_p2_right;
+    wire snac_p2_up_analog, snac_p2_down_analog, snac_p2_left_analog, snac_p2_right_analog;
+    //using left analog joypad
+    assign snac_p2_up_analog    = (p2_joy[15:8] < 8'h40) ? 1'b1 : 1'b0; //analog range UP 0x00 Idle 0x7F DOWN 0xFF, DEADZONE +- 0x15
+    assign snac_p2_down_analog  = (p2_joy[15:8] > 8'hC0) ? 1'b1 : 1'b0; 
+    assign snac_p2_left_analog  = (p2_joy[7:0]  < 8'h40) ? 1'b1 : 1'b0; //analog range LEFT 0x00 Idle 0x7F RIGHT 0xFF, DEADZONE +- 0x15
+    assign snac_p2_right_analog = (p2_joy[7:0]  > 8'hC0) ? 1'b1 : 1'b0;
+
+    always @(posedge clk_74a) begin
+        snac_p2_up    <= (snac_is_analog) ? snac_p2_up_analog    : p2_btn[0];
+        snac_p2_down  <= (snac_is_analog) ? snac_p2_down_analog  : p2_btn[1];
+        snac_p2_left  <= (snac_is_analog) ? snac_p2_left_analog  : p2_btn[2];
+        snac_p2_right <= (snac_is_analog) ? snac_p2_right_analog : p2_btn[3];
+    end
+    always @(posedge clk_74a) begin
+        reg [31:0] p1_pocket_btn, p1_pocket_joy;
+        reg [31:0] p2_pocket_btn, p2_pocket_joy;
+
+        if((snac_game_cont_type == 5'h0) || !analogizer_ena) begin //SNAC is disabled
+        //if((snac_game_cont_type == 5'h0)) begin //SNAC is disabled
+            p1_controls <= cont1_key;
+            p2_controls <= cont2_key;
+        end
+        else begin
+        case(snac_cont_assignment[1:0])
+        2'h0: begin  //SNAC P1 -> Pocket P1
+            p1_controls <= {p1_btn[15:4],snac_p1_right,snac_p1_left,snac_p1_down,snac_p1_up};
+            p2_controls <= cont1_key;
+            end
+        2'h1: begin  //SNAC P1 -> Pocket P2
+            p1_controls <= cont1_key;
+            p2_controls <= p1_btn;
+            end
+        2'h2: begin //SNAC P1 -> Pocket P1, SNAC P2 -> Pocket P2
+            p1_controls <= {p1_btn[15:4],snac_p1_right,snac_p1_left,snac_p1_down,snac_p1_up};
+            p2_controls <= {p2_btn[15:4],snac_p2_right,snac_p2_left,snac_p2_down,snac_p2_up};
+            end
+        2'h3: begin //SNAC P1 -> Pocket P2, SNAC P2 -> Pocket P1
+            p1_controls <= {p2_btn[15:4],snac_p2_right,snac_p2_left,snac_p2_down,snac_p2_up};
+            p2_controls <= {p1_btn[15:4],snac_p1_right,snac_p1_left,snac_p1_down,snac_p1_up};
+            end
+        default: begin 
+            p1_controls <= cont1_key;
+            p2_controls <= cont2_key;
+            end
+        endcase
+        end
+    end
+
+    wire [15:0] p1_btn_CK; 
+    wire [15:0] p2_btn_CK;
+    wire [31:0] p1_joy_CK; 
+    wire [31:0] p2_joy_CK;
+    
+    synch_3 #(
+    .WIDTH(16)
+    ) p1b_s (
+        p1_btn_CK,
+        p1_btn,
+        clk_74a
+    );
+
+   synch_3 #(
+       .WIDTH(16)
+   ) p2b_s (
+       p2_btn_CK,
+       p2_btn,
+       clk_74a
+   );
+
+    synch_3 #(
+    .WIDTH(32)
+    ) p3b_s (
+        p1_joy_CK,
+        p1_joy,
+        clk_74a
+    );
+        
+    synch_3 #(
+        .WIDTH(32)
+    ) p4b_s (
+        p2_joy_CK,
+        p2_joy,
+        clk_74a
+    );
+
+
+    // Video Y/C Encoder settings
+    // Follows the Mike Simone Y/C encoder settings:
+    // https://github.com/MikeS11/MiSTerFPGA_YC_Encoder
+    // SET PAL and NTSC TIMING and pass through status bits. ** YC must be enabled in the qsf file **
+    wire [39:0] CHROMA_PHASE_INC;
+    wire [26:0] COLORBURST_RANGE;
+
+    wire PALFLAG;
+
+    parameter NTSC_REF = 3.579545;   
+    parameter PAL_REF = 4.43361875;
+
+    // Parameters to be modifed
+    parameter CLK_VIDEO_NTSC = 42.954545; // Must be filled E.g XX.X Hz - CLK_VIDEO
+    parameter CLK_VIDEO_PAL  = 42.954545; // Must be filled E.g XX.X Hz - CLK_VIDEO
+
+    localparam [39:0] NTSC_PHASE_INC1 = 40'd91625958316; // ((NTSC_REF * 2^40) / CLK_VIDEO_NTSC)
+    localparam [39:0] PAL_PHASE_INC1  = 40'd113487766399; // ((PAL_REF * 2^40) / CLK_VIDEO_PAL)
+  
+	localparam [6:0] COLORBURST_START1 = (3.7 * (CLK_VIDEO_NTSC/NTSC_REF));
+	localparam [9:0] COLORBURST_NTSC_END1 = (9 * (CLK_VIDEO_NTSC/NTSC_REF)) + COLORBURST_START1;
+	localparam [9:0] COLORBURST_PAL_END1 = (10 * (CLK_VIDEO_PAL/PAL_REF)) + COLORBURST_START1;
+
+    assign PALFLAG = dip_sw1[0]; 
+
+    assign CHROMA_PHASE_INC = PALFLAG ? PAL_PHASE_INC1 : NTSC_PHASE_INC1; 
+    assign COLORBURST_RANGE = {COLORBURST_START1, COLORBURST_NTSC_END1, COLORBURST_PAL_END1};
+
+    wire busy;
+
+    openFPGA_Pocket_Analogizer #(.MASTER_CLK_FREQ(42_954_545), .LINE_LENGTH(290), .ADDRESS_ANALOGIZER_CONFIG(ADDRESS_ANALOGIZER_CONFIG)) analogizer (
+        .clk_74a(clk_74a),
+        .i_clk(clk_sys),
+        .i_rst_apf(msx_reset | reset_sw), //i_rst_apf is active high
+        .i_rst_core(msx_reset | reset_sw), //i_rst_core is active high
+
+        //Video interface
+        .video_clk(clk_sys),
+        .R(core_r),
+        .G(core_g),
+        .B(core_b),
+        .Hblank(core_hb),
+        .Vblank(core_vb),
+        .Hsync(~hsync_n), //composite SYNC on HSync.
+        .Vsync(~vsync_n),
+
+        //openFPGA Bridge interface
+        .bridge_endian_little(bridge_endian_little),
+        .bridge_addr(bridge_addr),
+        .bridge_rd(bridge_rd),
+        .analogizer_bridge_rd_data(analogizer_bridge_rd_data),
+        .bridge_wr(bridge_wr),
+        .bridge_wr_data(bridge_wr_data),
+
+        //Analogizer settings
+        .analogizer_ena_out(analogizer_ena),
+        .snac_game_cont_type_out(snac_game_cont_type),
+        .snac_cont_assignment_out(snac_cont_assignment),
+        .analogizer_video_type_out(analogizer_video_type),
+        .SC_fx_out(),
+        .pocket_blank_screen_out(pocket_blank_screen),
+        .analogizer_osd_out(),
+
+        //Video Y/C Encoder interface
+        .CHROMA_PHASE_INC(CHROMA_PHASE_INC),
+        .COLORBURST_RANGE(COLORBURST_RANGE),
+        .CHROMA_ADD(0),
+        .CHROMA_MUL(0),
+        .PALFLAG(PALFLAG),
+        //Video SVGA Scandoubler interface
+        .ce_pix(ce_10m7),
+        .scandoubler(1'b1), //logic for disable/enable the scandoubler
+        //SNAC interface
+        .p1_btn_state(p1_btn_CK),
+        .p1_joy_state(p1_joy_CK),
+        .p2_btn_state(p2_btn_CK),  
+        .p2_joy_state(p2_joy_CK),
+        .p3_btn_state(),  
+        .p4_btn_state(),
+        .busy(busy),    
+        //Pocket Analogizer IO interface to the Pocket cartridge port
+        .cart_tran_bank2(cart_tran_bank2),
+        .cart_tran_bank2_dir(cart_tran_bank2_dir),
+        .cart_tran_bank3(cart_tran_bank3),
+        .cart_tran_bank3_dir(cart_tran_bank3_dir),
+        .cart_tran_bank1(cart_tran_bank1),
+        .cart_tran_bank1_dir(cart_tran_bank1_dir),
+        .cart_tran_bank0(cart_tran_bank0),
+        .cart_tran_bank0_dir(cart_tran_bank0_dir),
+        .cart_tran_pin30(cart_tran_pin30),
+        .cart_tran_pin30_dir(cart_tran_pin30_dir),
+        .cart_pin30_pwroff_reset(cart_pin30_pwroff_reset),
+        .cart_tran_pin31(cart_tran_pin31),
+        .cart_tran_pin31_dir(cart_tran_pin31_dir),
+        //debug
+        .o_stb(),
+        .o_ps2_code_new(snac_ps2_code_new),
+        .o_ps2_code(snac_ps2_code)
+    );
+    end
+     endgenerate
+    /*[ANALOGIZER_HOOK_END]*/
 
 endmodule
