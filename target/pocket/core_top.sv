@@ -689,10 +689,13 @@ module core_top
     wire             core_de;          // Display Enable
     wire [23:0] pocket_video_rgb;
 
-    // The V9938 provides a fixed-size display-enable window (borders included)
+    // The V9938 provides a fixed-size display-enable window (borders included).
+    // The Pocket scaler takes the trimmed window (msx_video_de); the Analogizer
+    // scandoubler needs the raw H/V blanking split out, since it times every
+    // output line from the Hblank edges.
     assign core_de = msx_video_de;
-    assign core_hb = 1'b0;
-    assign core_vb = 1'b0;
+    assign core_hb = msx_hblank;
+    assign core_vb = msx_vblank;
 
     video_mixer #(.RW(BPP_R),.GW(BPP_G),.BW(BPP_B)) pocket_video_mixer
     (
@@ -934,7 +937,7 @@ module core_top
     synch_3 sync_rst(reset_sw, reset_sw_s, clk_21m);
 
     //! CORE
-    wire        hsync_n, vsync_n, msx_video_de;
+    wire        hsync_n, vsync_n, msx_video_de, msx_hblank, msx_vblank;
     wire        ioctl_waitROM;
     wire  [3:0] mapper_info;
 
@@ -1026,6 +1029,8 @@ endgenerate
         .hsync_n        ( hsync_n              ), // [o]
         .vsync_n        ( vsync_n              ), // [o]
         .video_de       ( msx_video_de         ), // [o]
+        .hblank         ( msx_hblank           ), // [o]
+        .vblank         ( msx_vblank           ), // [o]
 
         .audio          ( core_snd_l           ), // [o]
 
@@ -1355,7 +1360,7 @@ endgenerate
 
     wire busy;
 
-    openFPGA_Pocket_Analogizer #(.MASTER_CLK_FREQ(42_954_545), .LINE_LENGTH(290), .ADDRESS_ANALOGIZER_CONFIG(ADDRESS_ANALOGIZER_CONFIG)) analogizer (
+    openFPGA_Pocket_Analogizer #(.MASTER_CLK_FREQ(42_954_545), .LINE_LENGTH(684), .ADDRESS_ANALOGIZER_CONFIG(ADDRESS_ANALOGIZER_CONFIG)) analogizer (
         .clk_74a(clk_74a),
         .i_clk(clk_sys),
         .i_rst_apf(msx_reset | reset_sw), //i_rst_apf is active high

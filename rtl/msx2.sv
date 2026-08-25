@@ -49,6 +49,8 @@ module msx2
         output        hsync_n,
         output        vsync_n,
         output        video_de,
+        output        hblank,
+        output        vblank,
         input         vdp_pal,
         input         osk_chord,
         input         osk_chord2,
@@ -411,7 +413,9 @@ module msx2
         .NTSC_PAL_TYPE   ( ~vdp_pal      ), // 1: follow VDP R9 PAL bit, 0: forced
         .FORCED_V_MODE   ( vdp_pal       ),
         .LEGACY_VGA      ( 1'b0          ),
-        .PVIDEO_WINDOW_Y ( vdp_win_y     )
+        .PVIDEO_WINDOW_Y ( vdp_win_y     ),
+        .PVIDEO_HBLANK   ( hblank        ),
+        .PVIDEO_VBLANK   ( vblank        )
     );
 
     //--------------------------------------------------------------------------
