@@ -80,6 +80,7 @@ module openFPGA_Pocket_Analogizer #(parameter MASTER_CLK_FREQ=50_000_000, parame
 	input  wire [7:0] R,
 	input  wire [7:0] G,
 	input  wire [7:0] B,
+	input  wire DE,
 	input  wire Hblank,
 	input  wire Vblank,
 	input  wire Hsync,
@@ -331,7 +332,7 @@ end
 				Bout = B_fix[7:2]&{6{ANALOGIZER_DE}};
 				HsyncOut = ANALOGIZER_CSYNC;
 				VsyncOut = 1'b1;
-				BLANKnOut = ANALOGIZER_DE;
+				BLANKnOut = DE; //ANALOGIZER_DE;
 			end
 			4'h3, 4'h4: begin// Y/C Modes works for Analogizer R1, R2 Adapters
 				Rout = yc_o[23:18];
