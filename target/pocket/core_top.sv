@@ -1371,6 +1371,7 @@ endgenerate
         .R(core_r),
         .G(core_g),
         .B(core_b),
+        .DE(core_de),
         .Hblank(core_hb),
         .Vblank(core_vb),
         .Hsync(~hsync_n), //composite SYNC on HSync.
