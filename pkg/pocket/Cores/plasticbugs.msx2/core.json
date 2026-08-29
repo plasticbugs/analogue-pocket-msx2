@@ -9,8 +9,8 @@
             "description": "MSX2 core by plasticbugs, with Analogizer support",
             "author": "plasticbugs",
             "url": "https://github.com/plasticbugs/analogue-pocket-msx2",
-            "version": "0.5.1",
-            "date_release": "2026-08-25"
+            "version": "0.5.2",
+            "date_release": "2026-08-29"
         },
         "framework": {
             "target_product": "Analogue Pocket",
