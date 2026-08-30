@@ -181,7 +181,11 @@ In any case, unless the Analogizer adapter is explicitly enabled via its own con
   the basis of nearly every FPGA MSX in existence
 - Molekula for the MSX1 core this is built on
 - Marcus Andrade (boogermann) and the OpenGateware project for the Pocket
-  framework and the original Pocket port
+  framework and the original Pocket port — 41 of the 63 files in
+  `platform/pocket` are his, the Quartus project files came from his Gateman
+  CLI, and `target/pocket/core_top.sv` starts from his template — and for
+  Raetro's `raetro/quartus:pocket` container, which is what both
+  `build-local.sh` and CI compile this core inside
 - The C-BIOS Association for a freely redistributable MSX BIOS
 - The openMSX project for the Software Database that powers mapper
   auto-detection
