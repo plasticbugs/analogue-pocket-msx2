@@ -65,16 +65,16 @@
                     { "name": "SHIFT", "value": "0x00000027" },
                     { "name": "Z", "value": "0x0000001A" },
                     { "name": "X", "value": "0x00000018" },
-                    { "name": "C", "value": "0x00000003" },
                     { "name": "M", "value": "0x0000000D" },
                     { "name": "N", "value": "0x0000000E" },
                     { "name": "Y", "value": "0x00000019" },
                     { "name": "1", "value": "0x0000001C" },
                     { "name": "2", "value": "0x0000001D" },
-                    { "name": "3", "value": "0x0000001E" },
                     { "name": "ESC", "value": "0x0000002B" },
                     { "name": "CTRL", "value": "0x00000028" },
-                    { "name": "GRAPH", "value": "0x00000029" }
+                    { "name": "GRAPH", "value": "0x00000029" },
+                    { "name": "F2", "value": "0x00000033" },
+                    { "name": "F3", "value": "0x00000034" }
                 ]
             },
             {
@@ -93,16 +93,16 @@
                     { "name": "SHIFT", "value": "0x000009C0" },
                     { "name": "Z", "value": "0x00000680" },
                     { "name": "X", "value": "0x00000600" },
-                    { "name": "C", "value": "0x000000C0" },
                     { "name": "M", "value": "0x00000340" },
                     { "name": "N", "value": "0x00000380" },
                     { "name": "Y", "value": "0x00000640" },
                     { "name": "1", "value": "0x00000700" },
                     { "name": "2", "value": "0x00000740" },
-                    { "name": "3", "value": "0x00000780" },
                     { "name": "ESC", "value": "0x00000AC0" },
                     { "name": "CTRL", "value": "0x00000A00" },
-                    { "name": "GRAPH", "value": "0x00000A40" }
+                    { "name": "GRAPH", "value": "0x00000A40" },
+                    { "name": "F2", "value": "0x00000CC0" },
+                    { "name": "F3", "value": "0x00000D00" }
                 ]
             },
             {
@@ -119,7 +119,11 @@
                     { "name": "SHIFT", "value": "0x00027000" },
                     { "name": "CTRL", "value": "0x00028000" },
                     { "name": "GRAPH", "value": "0x00029000" },
-                    { "name": "F1", "value": "0x00032000" }
+                    { "name": "F1", "value": "0x00032000" },
+                    { "name": "F2", "value": "0x00033000" },
+                    { "name": "F3", "value": "0x00034000" },
+                    { "name": "F4", "value": "0x00035000" },
+                    { "name": "F5", "value": "0x00036000" }
                 ]
             },
             {
@@ -136,6 +140,10 @@
                     { "name": "SHIFT", "value": "0x009C0000" },
                     { "name": "CTRL", "value": "0x00A00000" },
                     { "name": "GRAPH", "value": "0x00A40000" },
+                    { "name": "F1", "value": "0x00C80000" },
+                    { "name": "F2", "value": "0x00CC0000" },
+                    { "name": "F3", "value": "0x00D00000" },
+                    { "name": "F4", "value": "0x00D40000" },
                     { "name": "F5", "value": "0x00D80000" }
                 ]
             },
@@ -151,7 +159,11 @@
                 "options": [
                     { "name": "None", "value": "0x00000000" },
                     { "name": "SELECT", "value": "0x37000000" },
-                    { "name": "F1", "value": "0x32000000" }
+                    { "name": "F1", "value": "0x32000000" },
+                    { "name": "F2", "value": "0x33000000" },
+                    { "name": "F3", "value": "0x34000000" },
+                    { "name": "F4", "value": "0x35000000" },
+                    { "name": "F5", "value": "0x36000000" }
                 ]
             },
             {
@@ -167,6 +179,10 @@
                     { "name": "None", "value": "0x00000000" },
                     { "name": "SPACE", "value": "0x00025000" },
                     { "name": "RETURN", "value": "0x00026000" },
+                    { "name": "F1", "value": "0x00032000" },
+                    { "name": "F2", "value": "0x00033000" },
+                    { "name": "F3", "value": "0x00034000" },
+                    { "name": "F4", "value": "0x00035000" },
                     { "name": "F5", "value": "0x00036000" }
                 ]
             }

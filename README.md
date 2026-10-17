@@ -98,6 +98,25 @@ machine's BIOS (the common case for BASIC) and the International view
 under C-BIOS or a European machine's BIOS, so the legends match what
 appears on screen.
 
+## Joy2Key for Metal Gear
+
+Metal Gear and Metal Gear 2 move and attack from the joystick port (the
+d-pad and A/B), but the weapon, equipment and radio screens are only on the
+function keys. With **Enable Joy2Key** on, map them like this:
+
+| Button | Key | Metal Gear |
+|---|---|---|
+| Y | F2 | Weapons |
+| X | F3 | Equipment |
+| Select | F4 | Transceiver |
+| Start | F1 | Pause |
+
+Leave L and R on None. They start the on-screen keyboard chord, and a key
+mapped to either would be typed as you reach for it.
+
+Joy2Key sends one key at a time and ignores a mapped button while a d-pad
+direction is held, so stop moving before you open a menu.
+
 ## Known limitations
 
 - Rarely, a stray line of pixels appears at the bottom of the screen

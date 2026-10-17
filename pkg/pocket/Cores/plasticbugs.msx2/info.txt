@@ -25,6 +25,12 @@ Joy2Key (enable in Core Settings):
 * Map Y/X/L/R/Select/Start to
   keys in the menus
 
+Metal Gear 1 & 2 (A/B attack):
+* Y: F2 weapons
+* X: F3 equipment
+* Select: F4 transceiver
+* Start: F1 pause
+
 MSX2 core by plasticbugs (Scott
 Moschella), based on the MSX core
 by boogermann (Marcus Andrade)
