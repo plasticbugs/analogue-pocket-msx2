@@ -70,7 +70,10 @@ module interact
         // High Score NVRAM
         output logic [15:0] nvram_size, // High Score Save Size
         // Reset Core
-        output logic        reset_sw
+        output logic        reset_sw,
+        //! Clear the core's NVRAM: high for the whole reset window that a
+        //! write to 0xF0000020 starts (the core wipes while it is in reset)
+        output logic        nvclear_sw
     );
 
     //! ------------------------------------------------------------------------
@@ -80,6 +83,7 @@ module interact
     reg         reset_timer;
     reg         core_reset_n = 1'b1;
     reg         core_reset_r = 1'b1;
+    reg         nvclear_r    = 1'b0;
 
     always_ff @(posedge clk_74a) begin
         if(reset_timer) begin
@@ -109,16 +113,23 @@ module interact
     reg [31:0] status_l   = 32'h0;
     reg [15:0] nvram_sz   = 16'h0;
 
+    //! The switches reset the machine, because an arcade board reads most of its
+    //! DIPs once at power-up -- but only when a write actually changes them.
+    //! The Pocket writes the whole register again when the menu closes, and
+    //! resetting on that made simply opening and closing the menu restart the
+    //! game.  The reset command itself (0xF0000000) is unconditional.
     always_ff @(posedge clk_74a) begin
         reset_timer <= 0; //! Always default this to zero
+        if (core_reset_n) nvclear_r <= 1'b0;   //! the clear request ends with the reset window
         if(bridge_wr) begin
             case(bridge_addr)
                 32'hF0000000: begin /*        RESET ONLY          */    reset_timer <= 1; end //! Reset Core Command
-                32'hF0000010: begin svc_mode   <= bridge_wr_data[0];    reset_timer <= 1; end //! Service Mode Switch
-                32'hF1000000: begin dip_switch <= bridge_wr_data;       reset_timer <= 1; end //! DIP Switches
+                32'hF0000010: begin svc_mode   <= bridge_wr_data[0];    reset_timer <= (bridge_wr_data[0] != svc_mode);   end //! Service Mode Switch
+                32'hF0000020: begin nvclear_r  <= 1'b1;                 reset_timer <= 1; end //! Clear NVRAM (records), then reset
+                32'hF1000000: begin dip_switch <= bridge_wr_data;       reset_timer <= (bridge_wr_data != dip_switch);    end //! DIP Switches
                 32'hF2000000: begin modifiers  <= bridge_wr_data;                         end //! Modifiers
                 32'hF3000000: begin filters    <= bridge_wr_data;                         end //! A/V Filters
-                32'hF4000000: begin ext_switch <= bridge_wr_data;       reset_timer <= 1; end //! Extra DIP Switches
+                32'hF4000000: begin ext_switch <= bridge_wr_data;       reset_timer <= (bridge_wr_data != ext_switch);    end //! Extra DIP Switches
                 32'hF5000000: begin nvram_sz   <= bridge_wr_data[15:0];                   end //! NVRAM Size
                 32'hFA000000: begin status_l   <= bridge_wr_data;                         end //! Status Low  [31:0]
                 32'hFB000000: begin status_h   <= bridge_wr_data;                         end //! Status High [63:32]
@@ -153,6 +164,7 @@ module interact
     synch_3 #(.WIDTH(32)) sync_sth(status_h,     status_h_s,   clk_sync);
     synch_3               sync_svc(svc_mode,     svc_mode_s,   clk_sync);
     synch_3               sync_rst(core_reset_n, core_reset_s, clk_sync);
+    synch_3               sync_nvc(nvclear_r,    nvclear_sw,   clk_sync);
 
     always_comb begin
         {dip_sw3, dip_sw2, dip_sw1, dip_sw0} = dip_switch_s;

@@ -610,7 +610,7 @@ module core_top
     wire  [7:0] mod_sw0, mod_sw1, mod_sw2, mod_sw3;
     wire  [3:0] scnl_sw, smask_sw, afilter_sw, vol_att;
     wire [63:0] status;
-    wire        reset_sw, svc_sw;
+    wire        reset_sw, svc_sw, nvclear_sw;
 
     interact pocket_interact
     (
@@ -649,7 +649,8 @@ module core_top
         .afilter_sw       ( afilter_sw         ),
         .vol_att          ( vol_att            ),
         // Reset Switch
-        .reset_sw         ( reset_sw           )
+        .reset_sw         ( reset_sw           ),
+        .nvclear_sw       ( nvclear_sw         )  // no NVRAM to clear; unused
     );
 
     //! ------------------------------------------------------------------------
@@ -996,9 +997,12 @@ endgenerate
 
 
 
-    // six 6-bit key indices: Y/X/L/R/Select in mod_sw[29:0] (0xF2000000),
-    // Start in dip_sw bits [17:12] (0xF1000000, above the mapper/PAL bits)
-    wire [35:0] key_map = { dip_sw2[1:0], dip_sw1[7:4],
+    // Joy2Key is configured from registers that do not reset the machine
+    // (tools/make_interact.py has the layout): six 6-bit key indices,
+    // Y/X/L/R/Select in the modifiers word [29:0] (0xF2000000) with the
+    // enable at bit 30, and Start in status low [5:0] (0xFA000000). The DIP
+    // word (0xF1000000) holds only the mappers and PAL, which do need one.
+    wire [35:0] key_map = { status[5:0],
                             mod_sw3[5:0], mod_sw2, mod_sw1, mod_sw0 };
     wire [10:0] ps2_joy;
 
@@ -1006,7 +1010,7 @@ endgenerate
     (
         .clk     ( clk_21m    ),
         .reset   ( reset_sw   ),
-        .enable  ( dip_sw1[2] ),
+        .enable  ( mod_sw3[6] ),
         .key_map ( key_map    ),
         .joy_key ( joy_key    ),
         .ps2_key ( ps2_joy    )

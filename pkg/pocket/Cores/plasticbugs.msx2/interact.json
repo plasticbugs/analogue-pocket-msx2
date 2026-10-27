@@ -1,194 +1,210 @@
 {
-    "interact": {
-        "magic": "APF_VER_1",
-        "variables": [
-            {
-                "name": "Slot A Mapper",
-                "id": 0,
-                "type": "list",
-                "enabled": true,
-                "persist": false,
-                "address": "0xF1000000",
-                "defaultval": 0,
-                "mask": "0xFFFFFFF0",
-                "options": [
-                    { "name": "Auto", "value": "0x00" },
-                    { "name": "None", "value": "0x01" },
-                    { "name": "GameMaster2", "value": "0x02" },
-                    { "name": "Konami", "value": "0x03" },
-                    { "name": "KonamiSCC", "value": "0x04" },
-                    { "name": "ASCII8", "value": "0x05" },
-                    { "name": "ASCII16", "value": "0x06" },
-                    { "name": "Linear 64k", "value": "0x07" },
-                    { "name": "R-TYPE", "value": "0x08" },
-                    { "name": "Generic 8K", "value": "0x0A" },
-                    { "name": "Cross Blaim", "value": "0x0B" },
-                    { "name": "Harry Fox", "value": "0x0C" },
-                    { "name": "Super Lode Runner", "value": "0x0D" }
-                ]
-            },
-            {
-                "name": "Slot B Mapper",
-                "id": 1,
-                "type": "list",
-                "enabled": true,
-                "persist": false,
-                "address": "0xF1000000",
-                "defaultval": 0,
-                "mask": "0xFFFFFF0F",
-                "options": [
-                    { "name": "Auto", "value": "0x00" },
-                    { "name": "None", "value": "0x10" },
-                    { "name": "Konami", "value": "0x30" },
-                    { "name": "KonamiSCC", "value": "0x40" },
-                    { "name": "ASCII8", "value": "0x50" },
-                    { "name": "ASCII16", "value": "0x60" }
-                ]
-            },
-            { "name": "Remove Cartridges", "id": 5, "type": "action", "enabled": true, "address": "0xF0000010", "value": 1 },
-            { "name": "Reset Core", "id": 6, "type": "action", "enabled": true, "address": "0xF0000000", "value": 1 },
-            { "name": "PAL Video", "id": 3, "type": "check", "enabled": true, "persist": true, "address": "0xF1000000", "defaultval": 0, "mask": "0xFFFFFEFF", "value": "0x00000100" },
-            { "name": "Enable Joy2Key", "id": 1000, "type": "check", "enabled": true, "persist": true, "address": "0xF1000000", "defaultval": 0, "mask": "0xFFFFFBFF", "value": "0x00000400" },
-            {
-                "name": "Map Y to key",
-                "id": 1001,
-                "type": "list",
-                "enabled": true,
-                "persist": true,
-                "address": "0xF2000000",
-                "defaultval": 0,
-                "mask": "0xFFFFFFC0",
-                "options": [
-                    { "name": "None", "value": "0x00000000" },
-                    { "name": "SPACE", "value": "0x00000025" },
-                    { "name": "RETURN", "value": "0x00000026" },
-                    { "name": "SHIFT", "value": "0x00000027" },
-                    { "name": "Z", "value": "0x0000001A" },
-                    { "name": "X", "value": "0x00000018" },
-                    { "name": "M", "value": "0x0000000D" },
-                    { "name": "N", "value": "0x0000000E" },
-                    { "name": "Y", "value": "0x00000019" },
-                    { "name": "1", "value": "0x0000001C" },
-                    { "name": "2", "value": "0x0000001D" },
-                    { "name": "ESC", "value": "0x0000002B" },
-                    { "name": "CTRL", "value": "0x00000028" },
-                    { "name": "GRAPH", "value": "0x00000029" },
-                    { "name": "F2", "value": "0x00000033" },
-                    { "name": "F3", "value": "0x00000034" }
-                ]
-            },
-            {
-                "name": "Map X to key",
-                "id": 1002,
-                "type": "list",
-                "enabled": true,
-                "persist": true,
-                "address": "0xF2000000",
-                "defaultval": 0,
-                "mask": "0xFFFFF03F",
-                "options": [
-                    { "name": "None", "value": "0x00000000" },
-                    { "name": "SPACE", "value": "0x00000940" },
-                    { "name": "RETURN", "value": "0x00000980" },
-                    { "name": "SHIFT", "value": "0x000009C0" },
-                    { "name": "Z", "value": "0x00000680" },
-                    { "name": "X", "value": "0x00000600" },
-                    { "name": "M", "value": "0x00000340" },
-                    { "name": "N", "value": "0x00000380" },
-                    { "name": "Y", "value": "0x00000640" },
-                    { "name": "1", "value": "0x00000700" },
-                    { "name": "2", "value": "0x00000740" },
-                    { "name": "ESC", "value": "0x00000AC0" },
-                    { "name": "CTRL", "value": "0x00000A00" },
-                    { "name": "GRAPH", "value": "0x00000A40" },
-                    { "name": "F2", "value": "0x00000CC0" },
-                    { "name": "F3", "value": "0x00000D00" }
-                ]
-            },
-            {
-                "name": "Map L to key",
-                "id": 1003,
-                "type": "list",
-                "enabled": true,
-                "persist": true,
-                "address": "0xF2000000",
-                "defaultval": 0,
-                "mask": "0xFFFC0FFF",
-                "options": [
-                    { "name": "None", "value": "0x00000000" },
-                    { "name": "SHIFT", "value": "0x00027000" },
-                    { "name": "CTRL", "value": "0x00028000" },
-                    { "name": "GRAPH", "value": "0x00029000" },
-                    { "name": "F1", "value": "0x00032000" },
-                    { "name": "F2", "value": "0x00033000" },
-                    { "name": "F3", "value": "0x00034000" },
-                    { "name": "F4", "value": "0x00035000" },
-                    { "name": "F5", "value": "0x00036000" }
-                ]
-            },
-            {
-                "name": "Map R to key",
-                "id": 1004,
-                "type": "list",
-                "enabled": true,
-                "persist": true,
-                "address": "0xF2000000",
-                "defaultval": 0,
-                "mask": "0xFF03FFFF",
-                "options": [
-                    { "name": "None", "value": "0x00000000" },
-                    { "name": "SHIFT", "value": "0x009C0000" },
-                    { "name": "CTRL", "value": "0x00A00000" },
-                    { "name": "GRAPH", "value": "0x00A40000" },
-                    { "name": "F1", "value": "0x00C80000" },
-                    { "name": "F2", "value": "0x00CC0000" },
-                    { "name": "F3", "value": "0x00D00000" },
-                    { "name": "F4", "value": "0x00D40000" },
-                    { "name": "F5", "value": "0x00D80000" }
-                ]
-            },
-            {
-                "name": "Map Select to key",
-                "id": 1005,
-                "type": "list",
-                "enabled": true,
-                "persist": true,
-                "address": "0xF2000000",
-                "defaultval": 0,
-                "mask": "0xC0FFFFFF",
-                "options": [
-                    { "name": "None", "value": "0x00000000" },
-                    { "name": "SELECT", "value": "0x37000000" },
-                    { "name": "F1", "value": "0x32000000" },
-                    { "name": "F2", "value": "0x33000000" },
-                    { "name": "F3", "value": "0x34000000" },
-                    { "name": "F4", "value": "0x35000000" },
-                    { "name": "F5", "value": "0x36000000" }
-                ]
-            },
-            {
-                "name": "Map Start to key",
-                "id": 1006,
-                "type": "list",
-                "enabled": true,
-                "persist": true,
-                "address": "0xF1000000",
-                "defaultval": 0,
-                "mask": "0xFFFC0FFF",
-                "options": [
-                    { "name": "None", "value": "0x00000000" },
-                    { "name": "SPACE", "value": "0x00025000" },
-                    { "name": "RETURN", "value": "0x00026000" },
-                    { "name": "F1", "value": "0x00032000" },
-                    { "name": "F2", "value": "0x00033000" },
-                    { "name": "F3", "value": "0x00034000" },
-                    { "name": "F4", "value": "0x00035000" },
-                    { "name": "F5", "value": "0x00036000" }
-                ]
-            }
-        ],
-        "messages": [
-
+  "interact": {
+    "magic": "APF_VER_1",
+    "variables": [
+      {
+        "name": "Slot A Mapper",
+        "id": 0,
+        "type": "list",
+        "enabled": true,
+        "persist": false,
+        "address": "0xF1000000",
+        "defaultval": 0,
+        "mask": "0xFFFFFFF0",
+        "options": [
+          {"name": "Auto", "value": "0x00000000"},
+          {"name": "None", "value": "0x00000001"},
+          {"name": "GameMaster2", "value": "0x00000002"},
+          {"name": "Konami", "value": "0x00000003"},
+          {"name": "KonamiSCC", "value": "0x00000004"},
+          {"name": "ASCII8", "value": "0x00000005"},
+          {"name": "ASCII16", "value": "0x00000006"},
+          {"name": "Linear 64k", "value": "0x00000007"},
+          {"name": "R-TYPE", "value": "0x00000008"},
+          {"name": "Generic 8K", "value": "0x0000000A"},
+          {"name": "Cross Blaim", "value": "0x0000000B"},
+          {"name": "Harry Fox", "value": "0x0000000C"},
+          {"name": "Super Lode Runner", "value": "0x0000000D"}
         ]
-    }
+      },
+      {
+        "name": "Slot B Mapper",
+        "id": 1,
+        "type": "list",
+        "enabled": true,
+        "persist": false,
+        "address": "0xF1000000",
+        "defaultval": 0,
+        "mask": "0xFFFFFF0F",
+        "options": [
+          {"name": "Auto", "value": "0x00000000"},
+          {"name": "None", "value": "0x00000010"},
+          {"name": "Konami", "value": "0x00000030"},
+          {"name": "KonamiSCC", "value": "0x00000040"},
+          {"name": "ASCII8", "value": "0x00000050"},
+          {"name": "ASCII16", "value": "0x00000060"}
+        ]
+      },
+      {
+        "name": "Remove Cartridges",
+        "id": 5,
+        "type": "action",
+        "enabled": true,
+        "address": "0xF0000010",
+        "value": 1
+      },
+      {
+        "name": "Reset Core",
+        "id": 6,
+        "type": "action",
+        "enabled": true,
+        "address": "0xF0000000",
+        "value": 1
+      },
+      {
+        "name": "PAL Video",
+        "id": 10,
+        "type": "check",
+        "enabled": true,
+        "persist": true,
+        "address": "0xF1000000",
+        "defaultval": 0,
+        "mask": "0xFFFFFEFF",
+        "value": "0x00000100"
+      },
+      {
+        "name": "Enable Joy2Key",
+        "id": 20,
+        "type": "check",
+        "enabled": true,
+        "persist": true,
+        "address": "0xF2000000",
+        "defaultval": 0,
+        "mask": "0xBFFFFFFF",
+        "value": "0x40000000"
+      },
+      {
+        "name": "Map Y to key",
+        "id": 21,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0xF2000000",
+        "defaultval": 0,
+        "mask": "0xFFFFFFC0",
+        "options": [
+          {"name": "None", "value": "0x00000000"},
+          {"name": "SPACE", "value": "0x00000025"},
+          {"name": "RETURN", "value": "0x00000026"},
+          {"name": "SHIFT", "value": "0x00000027"},
+          {"name": "ESC", "value": "0x0000002B"},
+          {"name": "M", "value": "0x0000000D"},
+          {"name": "F1", "value": "0x00000032"},
+          {"name": "F2", "value": "0x00000033"},
+          {"name": "F3", "value": "0x00000034"},
+          {"name": "F4", "value": "0x00000035"},
+          {"name": "F5", "value": "0x00000036"}
+        ]
+      },
+      {
+        "name": "Map X to key",
+        "id": 22,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0xF2000000",
+        "defaultval": 0,
+        "mask": "0xFFFFF03F",
+        "options": [
+          {"name": "None", "value": "0x00000000"},
+          {"name": "SPACE", "value": "0x00000940"},
+          {"name": "RETURN", "value": "0x00000980"},
+          {"name": "SHIFT", "value": "0x000009C0"},
+          {"name": "ESC", "value": "0x00000AC0"},
+          {"name": "M", "value": "0x00000340"},
+          {"name": "F1", "value": "0x00000C80"},
+          {"name": "F2", "value": "0x00000CC0"},
+          {"name": "F3", "value": "0x00000D00"},
+          {"name": "F4", "value": "0x00000D40"},
+          {"name": "F5", "value": "0x00000D80"}
+        ]
+      },
+      {
+        "name": "Map L to key",
+        "id": 23,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0xF2000000",
+        "defaultval": 0,
+        "mask": "0xFFFC0FFF",
+        "options": [
+          {"name": "None", "value": "0x00000000"},
+          {"name": "F1", "value": "0x00032000"},
+          {"name": "F2", "value": "0x00033000"},
+          {"name": "F3", "value": "0x00034000"},
+          {"name": "F4", "value": "0x00035000"},
+          {"name": "F5", "value": "0x00036000"}
+        ]
+      },
+      {
+        "name": "Map R to key",
+        "id": 24,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0xF2000000",
+        "defaultval": 0,
+        "mask": "0xFF03FFFF",
+        "options": [
+          {"name": "None", "value": "0x00000000"},
+          {"name": "F1", "value": "0x00C80000"},
+          {"name": "F2", "value": "0x00CC0000"},
+          {"name": "F3", "value": "0x00D00000"},
+          {"name": "F4", "value": "0x00D40000"},
+          {"name": "F5", "value": "0x00D80000"}
+        ]
+      },
+      {
+        "name": "Map Select to key",
+        "id": 25,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0xF2000000",
+        "defaultval": 0,
+        "mask": "0xC0FFFFFF",
+        "options": [
+          {"name": "None", "value": "0x00000000"},
+          {"name": "SELECT", "value": "0x37000000"},
+          {"name": "F1", "value": "0x32000000"},
+          {"name": "F2", "value": "0x33000000"},
+          {"name": "F3", "value": "0x34000000"},
+          {"name": "F4", "value": "0x35000000"},
+          {"name": "F5", "value": "0x36000000"}
+        ]
+      },
+      {
+        "name": "Map Start to key",
+        "id": 26,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0xFA000000",
+        "defaultval": 0,
+        "mask": "0xFFFFFFC0",
+        "options": [
+          {"name": "None", "value": "0x00000000"},
+          {"name": "SPACE", "value": "0x00000025"},
+          {"name": "RETURN", "value": "0x00000026"},
+          {"name": "F1", "value": "0x00000032"},
+          {"name": "F2", "value": "0x00000033"},
+          {"name": "F3", "value": "0x00000034"},
+          {"name": "F4", "value": "0x00000035"},
+          {"name": "F5", "value": "0x00000036"}
+        ]
+      }
+    ],
+    "messages": []
+  }
 }

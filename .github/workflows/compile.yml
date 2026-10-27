@@ -20,6 +20,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check the package against what the Pocket's firmware accepts
+        run: tools/check-package.sh
+
       - name: Free runner disk space (Quartus image needs ~18GB)
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
