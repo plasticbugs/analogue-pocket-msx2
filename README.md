@@ -51,8 +51,9 @@ new assets folder and delete the old `Cores/boogermann.msx`,
   without a dock (see below)
 - **Joy2Key**: d-pad types the cursor keys; Y/X/L/R/Select/Start map to
   keyboard keys from the Core Settings menus — F1–F5 on every button,
-  SPACE/RETURN/SHIFT/ESC/M on Y and X, SELECT on Select, SPACE/RETURN on
-  Start — enough to play keyboard-driven games without a keyboard. A
+  SPACE/RETURN/ESC/M on Y and X (SHIFT on Y too), SELECT on Select,
+  SPACE/RETURN/STOP on Start — enough to play keyboard-driven games
+  without a keyboard. A
   mapping takes effect without restarting the machine
 - PSG (AY-3-8910), keyboard via USB dock
 - NTSC/PAL output with automatic scaler preset switching

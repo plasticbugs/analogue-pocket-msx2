@@ -34,7 +34,7 @@ interact" (tools/check_json.py, which this script runs). The mappers take
 19 options, which leaves 49 for the six buttons, so each button offers a
 subset of the table: F1-F5 everywhere (Metal Gear's weapon, equipment and
 transceiver screens and pause), the common action keys on Y and X, SELECT
-on Select, SPACE and RETURN on Start. To offer a key on a button, add it
+on Select, SPACE, RETURN and STOP on Start. To offer a key on a button, add it
 to that button's list and take one away somewhere, then run this script;
 it fails if the budget is exceeded.
 
@@ -66,16 +66,17 @@ KEYS.update({
 })
 
 FKEYS = ['F1', 'F2', 'F3', 'F4', 'F5']
-ACTION_KEYS = ['SPACE', 'RETURN', 'SHIFT', 'ESC', 'M']
+Y_KEYS = ['SPACE', 'RETURN', 'SHIFT', 'ESC', 'M']
+X_KEYS = ['SPACE', 'RETURN', 'ESC', 'M']        # SHIFT gave its slot to STOP on Start
 
 # (button, register, low bit, keys offered). Every list starts with None.
 BUTTONS = [
-    ('Y',      MOD,      0,  ACTION_KEYS + FKEYS),
-    ('X',      MOD,      6,  ACTION_KEYS + FKEYS),
+    ('Y',      MOD,      0,  Y_KEYS + FKEYS),
+    ('X',      MOD,      6,  X_KEYS + FKEYS),
     ('L',      MOD,      12, FKEYS),
     ('R',      MOD,      18, FKEYS),
     ('Select', MOD,      24, ['SELECT'] + FKEYS),
-    ('Start',  STATUS_L, 0,  ['SPACE', 'RETURN'] + FKEYS),
+    ('Start',  STATUS_L, 0,  ['SPACE', 'RETURN', 'STOP'] + FKEYS),
 ]
 KEY_BITS = 6
 JOY2KEY_ENABLE_BIT = 30     # bit 31 is left clear: no core that loads
